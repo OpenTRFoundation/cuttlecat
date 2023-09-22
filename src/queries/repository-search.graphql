@@ -1,0 +1,48 @@
+query RepositorySearch($searchString: String!, $first: Int!, $after:String) {
+    rateLimit{
+        cost # The point cost for the current query counting against the rate limit.
+        limit  # The maximum number of points the client is permitted to consume in a 60 minute window.
+        nodeCount # The maximum number of nodes this query may return.
+        remaining # The number of points remaining in the current rate limit window.
+        resetAt # The time at which the current rate limit window resets in UTC epoch seconds.
+        used # The number of points used in the current rate limit window.
+    }
+    search(type:REPOSITORY, query:$searchString, first:$first, after:$after){
+        pageInfo {
+            startCursor
+            hasNextPage
+            endCursor
+        }
+        repositoryCount
+        nodes{
+#            ...on Repository{
+#                ...RepositorySummary
+#            }
+            ...RepositorySummary
+        }
+    }
+}
+
+fragment RepositorySummary on Repository{
+    nameWithOwner
+    isInOrganization
+    owner{
+        login
+    }
+    forkCount
+    stargazerCount
+    # ideally, we would want to filter open and merged PRs, but that makes the API timeout
+    # pullRequests(states:[OPEN, MERGED]){
+    pullRequests{
+        totalCount
+    }
+    issues{
+        totalCount
+    }
+    mentionableUsers{
+        totalCount
+    }
+    watchers{
+        totalCount
+    }
+}

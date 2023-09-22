@@ -12,7 +12,7 @@ const config: CodegenConfig = {
     "src/generated/queries.ts": {
       plugins: ["typescript", "typescript-operations", "typescript-document-nodes"],
       config: {
-        onlyOperationTypes: true
+        onlyOperationTypes: true,
       }
     }
   },

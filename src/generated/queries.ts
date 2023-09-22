@@ -6843,16 +6843,60 @@ export enum WorkflowState {
   DisabledManually = 'DISABLED_MANUALLY'
 }
 
-export type WhoAmIQueryVariables = Exact<{ [key: string]: never; }>;
+export type RepositorySearchQueryVariables = Exact<{
+  searchString: Scalars['String']['input'];
+  first: Scalars['Int']['input'];
+  after?: InputMaybe<Scalars['String']['input']>;
+}>;
 
 
-export type WhoAmIQuery = { __typename?: 'Query', viewer: { __typename?: 'User', login: string } };
+export type RepositorySearchQuery = { __typename?: 'Query', rateLimit?: { __typename?: 'RateLimit', cost: number, limit: number, nodeCount: number, remaining: number, resetAt: any, used: number } | null, search: { __typename?: 'SearchResultItemConnection', repositoryCount: number, pageInfo: { __typename?: 'PageInfo', startCursor?: string | null, hasNextPage: boolean, endCursor?: string | null }, nodes?: Array<{ __typename?: 'App' } | { __typename?: 'Discussion' } | { __typename?: 'Issue' } | { __typename?: 'MarketplaceListing' } | { __typename?: 'Organization' } | { __typename?: 'PullRequest' } | { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, forkCount: number, stargazerCount: number, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string }, pullRequests: { __typename?: 'PullRequestConnection', totalCount: number }, issues: { __typename?: 'IssueConnection', totalCount: number }, mentionableUsers: { __typename?: 'UserConnection', totalCount: number }, watchers: { __typename?: 'UserConnection', totalCount: number } } | { __typename?: 'User' } | null> | null } };
 
+export type RepositorySummaryFragment = { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, forkCount: number, stargazerCount: number, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string }, pullRequests: { __typename?: 'PullRequestConnection', totalCount: number }, issues: { __typename?: 'IssueConnection', totalCount: number }, mentionableUsers: { __typename?: 'UserConnection', totalCount: number }, watchers: { __typename?: 'UserConnection', totalCount: number } };
 
-export const WhoAmI = gql`
-    query WhoAmI {
-  viewer {
+export const RepositorySummary = gql`
+    fragment RepositorySummary on Repository {
+  nameWithOwner
+  isInOrganization
+  owner {
     login
+  }
+  forkCount
+  stargazerCount
+  pullRequests {
+    totalCount
+  }
+  issues {
+    totalCount
+  }
+  mentionableUsers {
+    totalCount
+  }
+  watchers {
+    totalCount
   }
 }
     `;
+export const RepositorySearch = gql`
+    query RepositorySearch($searchString: String!, $first: Int!, $after: String) {
+  rateLimit {
+    cost
+    limit
+    nodeCount
+    remaining
+    resetAt
+    used
+  }
+  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {
+    pageInfo {
+      startCursor
+      hasNextPage
+      endCursor
+    }
+    repositoryCount
+    nodes {
+      ...RepositorySummary
+    }
+  }
+}
+    ${RepositorySummary}`;
