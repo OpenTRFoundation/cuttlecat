@@ -6,8 +6,14 @@ const config: CodegenConfig = {
   schema: "src/generated/github-schema-loader.ts",
   documents: ["src/mutations/*.graphql", "src/queries/*.graphql"],
   generates: {
-    "src/generated/graphql.ts": {
-      plugins: ["typescript", "typescript-resolvers", "typescript-document-nodes", "typescript-operations"]
+    // "src/generated/schema.ts": {
+    //   plugins: ["typescript", "typescript-document-nodes"]
+    // },
+    "src/generated/queries.ts": {
+      plugins: ["typescript", "typescript-operations", "typescript-document-nodes"],
+      config: {
+        onlyOperationTypes: true
+      }
     }
   },
   require: ["ts-node/register"],
