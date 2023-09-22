@@ -1,0 +1,19 @@
+{
+  "name": "cuttlecat",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "npx ts-node ./src/index.ts",
+    "build": "rimraf ./dist && tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.6.3",
+    "nodemon": "^3.0.1",
+    "rimraf": "^5.0.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}
