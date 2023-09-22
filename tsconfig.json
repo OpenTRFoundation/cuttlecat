@@ -8,6 +8,11 @@
     "forceConsistentCasingInFileNames": true,            /* Ensure that casing is correct in imports. */
 
     /* Type Checking */
-    "noImplicitAny": true,                               /* Enable error reporting for expressions and declarations with an implied 'any' type. */
-  }
+    "noImplicitAny": true                               /* Enable error reporting for expressions and declarations with an implied 'any' type. */
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "codegen.ts",
+  ]
 }
