@@ -25,7 +25,7 @@ async function foo() {
 
     console.log(RepositorySearch.loc!.source.body);
 
-    const res:RepositorySearchQuery = await graphqlWithAuth(
+    let request = graphqlWithAuth(
         RepositorySearch.loc!.source.body,
         {
             "searchString": search_string,
@@ -33,6 +33,10 @@ async function foo() {
             "after": null,
         }
     );
+
+    console.log(request);
+
+    let res = <RepositorySearchQuery>await request;
 
     return res;
 }
