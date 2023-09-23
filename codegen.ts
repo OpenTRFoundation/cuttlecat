@@ -3,7 +3,7 @@ import type { CodegenConfig } from '@graphql-codegen/cli';
 
 const config: CodegenConfig = {
   overwrite: true,
-  schema: "src/generated/github-schema-loader.cjs",
+  schema: "src/generated/github-schema-loader.ts",
   documents: ["src/mutations/*.graphql", "src/queries/*.graphql"],
   generates: {
     // "src/generated/schema.ts": {
@@ -17,8 +17,6 @@ const config: CodegenConfig = {
     }
   },
   require: ["ts-node/register"],
-  // hooks: { afterAllFileWrite: ['prettier --write'] },
-  emitLegacyCommonJSImports: false,
 };
 
 export default config;
