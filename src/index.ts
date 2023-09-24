@@ -7,7 +7,7 @@ async function initializeDynamicImports() {
 async function focusProjectSearch() {
     await initializeDynamicImports();
 
-    // (await import("./focusprojectsearch.js")).main()
+    (await import("./focusprojectsearch.js")).main()
 
 }
 
