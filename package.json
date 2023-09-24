@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "start": "npx ts-node ./src/index.ts",
+    "start": "npx tsc && node dist/index.js",
     "build": "rimraf ./dist && npm run codegen && tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "codegen": "graphql-codegen --config codegen.ts"
