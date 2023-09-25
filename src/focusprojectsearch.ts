@@ -1,7 +1,61 @@
 import {graphql} from "@octokit/graphql";
+import {v4 as uuidv4} from 'uuid';
 import {RepositorySearch, RepositorySearchQuery} from "./generated/queries";
 
 import {BaseTask, TaskQueue, TaskResult} from "./tasks/taskqueue";
+
+// TODO: add comments + docs
+
+interface ProjectSearchTaskOptions {
+    id:string;  // TODO: do we actually need this here?
+    minStars:number;
+    minForks:number;
+    minSizeInKb:number;
+    hasActivityAfter:string;
+    createdAfter:string;
+    createdBefore:string;
+    pageSize:number;
+    startCursor:string | null;
+}
+
+interface ProcessConfig {
+    minStars:number,
+    minForks:number,
+    minSizeInKb:number,
+    maxInactiveDays:number,
+    excludeProjectsCreatedBefore:Date,
+    minAgeInDays:number,
+    searchPeriodInDays:number,
+    pageSize:number,
+}
+
+interface ProcessState {
+    startingConfig:ProcessConfig,
+    unresolved:{ [key:string]:ProjectSearchTaskOptions },
+    resolved:{ [key:string]:ProjectSearchTaskOptions },
+    errored:{ [key:string]:ProjectSearchTaskOptions },
+    startDate:Date,
+    completionDate:Date | null,
+    outputFilePath:string,
+}
+
+const processState = {
+    startingConfig: {},
+    unresolved: {},
+    resolved: {},
+    errored: {},
+    completionDate: null,
+    outputFilePath: "",
+};
+
+// store the output of current run as an array of objects
+// these objects will be written to the output file at the end of the run
+// TODO: how about, write to file as we go?
+const currentRunOutput = [];
+
+function buildProcessConfig() {
+
+}
 
 export function main() {
     let abortController = new AbortController();
@@ -29,26 +83,20 @@ export function main() {
     });
 
     const task = new ProjectSearchTask(graphqlWithAuth, {
-        min_stars: 100,
-        min_forks: 100,
-        min_size_in_kb: 1000,
-        has_activity_after: "2023-06-01",
-        created_after: "2018-01-01",
-        created_before: "2018-01-10",
+        id: uuidv4(),
+        minStars: 100,
+        minForks: 100,
+        minSizeInKb: 1000,
+        hasActivityAfter: "2023-06-01",
+        createdAfter: "2018-01-01",
+        createdBefore: "2018-01-10",
+        pageSize: 100,
+        startCursor: null,
     });
 
     taskQueue.add(task);
 
     taskQueue.start();
-}
-
-interface ProjectSearchTaskOptions {
-    min_stars:number;
-    min_forks:number;
-    min_size_in_kb:number;
-    has_activity_after:string;
-    created_after:string;
-    created_before:string;
 }
 
 class ProjectSearchTask extends BaseTask<RepositorySearchQuery> {
@@ -64,11 +112,11 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery> {
     execute(signal:AbortSignal):Promise<RepositorySearchQuery> {
         // return Promise.resolve(undefined);
         let search_string = "is:public template:false archived:false " +
-            `stars:>${this.options.min_stars} ` +
-            `forks:>${this.options.min_forks} ` +
-            `size:>${this.options.min_size_in_kb} ` +
-            `pushed:>${this.options.has_activity_after} ` +
-            ` created:${this.options.created_after}..${this.options.created_before}`
+            `stars:>${this.options.minStars} ` +
+            `forks:>${this.options.minForks} ` +
+            `size:>${this.options.minSizeInKb} ` +
+            `pushed:>${this.options.hasActivityAfter} ` +
+            `created:${this.options.createdAfter}..${this.options.createdBefore}`
 
         // console.log(RepositorySearch.loc!.source.body);
 
@@ -76,13 +124,14 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery> {
             RepositorySearch.loc!.source.body,
             {
                 "searchString": search_string,
-                "first": 10,
-                "after": null,
+                "first": this.options.pageSize,
+                "after": this.options.startCursor,
             }
         ).then((res:RepositorySearchQuery) => {
             return res;
         });
         // TODO: catch, finally
     }
-
 }
+
+

@@ -20,6 +20,8 @@
     "@octokit/graphql-schema": "^14.32.0",
     "@tsconfig/node16": "^16.1.1",
     "@types/node": "^20.6.3",
+    "@types/uuid": "^9.0.4",
+    "envalid": "^8.0.0",
     "nodemon": "^3.0.1",
     "rimraf": "^5.0.1",
     "ts-node": "^10.9.1",
@@ -29,6 +31,7 @@
     "@octokit/graphql": "^7.0.1",
     "eventemitter3": "^5.0.1",
     "graphql": "^16.8.1",
-    "p-queue": "^7.4.1"
+    "p-queue": "^7.4.1",
+    "uuid": "^9.0.1"
   }
 }
