@@ -13,6 +13,8 @@ export interface TaskResult<ResultType> {
 }
 
 interface Task<ResultType> {
+    getId():string;
+
     createExecutable():(options:TaskOptions) => Promise<TaskResult<ResultType>>;
 
     execute(signal:AbortSignal):Promise<ResultType>;
@@ -33,6 +35,7 @@ export abstract class BaseTask<ResultType> implements Task<ResultType> {
         };
     }
 
+    abstract getId():string;
     abstract execute(signal?:AbortSignal):Promise<ResultType>;
 }
 
@@ -73,6 +76,7 @@ export class TaskQueue<ResultType> extends EventEmitter<'taskcomplete' | 'tasker
             this.emit('taskcomplete', result);
         });
 
+        // TODO: when is this sent? Can we know which task?
         this.backingQueue.on('error', (error) => {
             this.emit('taskerror', error);
         });

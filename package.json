@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@octokit/graphql": "^7.0.1",
+    "date-fns": "^2.30.0",
     "eventemitter3": "^5.0.1",
     "graphql": "^16.8.1",
     "p-queue": "^7.4.1",
