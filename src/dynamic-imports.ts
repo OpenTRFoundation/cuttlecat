@@ -36,6 +36,8 @@ interface PQueue_t<EnqueueOptionsType extends QueueAddOptions = QueueAddOptions>
     add<TaskResultType>(function_:Task<TaskResultType>, options?:Partial<EnqueueOptionsType>):Promise<TaskResultType | void>;
 
     start():PQueue_t<EnqueueOptionsType>;
+
+    onIdle():Promise<void>;
 }
 
 let PQueue:PQueue_t;

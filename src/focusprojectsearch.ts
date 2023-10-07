@@ -1,10 +1,10 @@
 import {graphql} from "@octokit/graphql";
 import {v4 as uuidv4} from 'uuid';
-import {RepositorySearch, RepositorySearchQuery} from "./generated/queries";
+import {RepositorySearch, RepositorySearchQuery, RepositorySummaryFragment} from "./generated/queries";
 import {cleanEnv, num, str} from 'envalid'
-import {readdirSync, readFileSync} from 'fs'
+import {appendFileSync, createWriteStream, readdirSync, readFileSync, writeFileSync} from 'fs'
 import {join} from 'path'
-import {eachDayOfInterval, format as doFormatDate, parse as doParseDate, startOfDay, subDays, addDays} from 'date-fns'
+import {addDays, eachDayOfInterval, format as doFormatDate, parse as doParseDate, startOfDay, subDays} from 'date-fns'
 
 import {BaseTask, TaskQueue, TaskResult} from "./tasks/taskqueue";
 
@@ -43,15 +43,16 @@ interface ProcessState {
     outputFilePath:string,
 }
 
-// store the output of current run as an array of objects
-// these objects will be written to the output file at the end of the run
-// TODO: how about, write to file as we go?
-const currentRunOutput = [];
+interface FileOutput {
+    taskId:string;  // to identify which task found this result
+    result:RepositorySummaryFragment,
+}
 
 function buildProcessConfigFromEnvVars() {
     return cleanEnv(process.env, {
         GITHUB_TOKEN: str({desc: "(not persisted in process file) GitHub API token. Token doesn't need any permissions."}),
         RENEW_PERIOD_IN_DAYS: num({desc: "(not persisted in process file) if previous queue is completed, create the next one after RENEW_PERIOD_IN_DAYS days"}),
+        RATE_LIMIT_STOP_PERCENT: num({desc: "if rate limit remaining is less than RATE_LIMIT_STOP_PERCENT * rate limit (typically 1000) / 100, stop the queue."}),
     });
 }
 
@@ -71,7 +72,7 @@ function buildNewQueueConfigFromEnvVars():QueueConfig {
     });
 }
 
-const DATA_DIR_PATH = "../data/focusprojectsearch";
+const DATA_DIR_PATH = "../data/focus-project-search";
 const PROCESS_STATE_FILE_PREFIX = "process-state-";
 const PROCESS_STATE_FILE_EXTENSION = ".json";
 const PROCESS_OUTPUT_PREFIX = "process-output-";
@@ -154,10 +155,34 @@ function createNewProcessState(startingConfig:QueueConfig, outputFilePath:string
     }
 }
 
-export function main() {
+function saveProcessRunOutput(stateFile:string, processState:ProcessState, currentRunOutput:FileOutput[]) {
+    console.log(`Writing process state to file ${stateFile}`);
+    writeFileSync(stateFile, JSON.stringify(processState, null, 2));
+
+    console.log(`Writing output to file: ${processState.outputFilePath}`);
+    const outputStream = createWriteStream("append.txt", {flags: 'a'});
+
+    // we don't write as an array. just add new items as new json objects
+    // the good thing is, we can use jq to filter the output
+    // jq has a slurp option:
+    // -s               read (slurp) all inputs into an array; apply filter to it;
+    for (let i = 0; i < currentRunOutput.length; i++) {
+        const output = currentRunOutput[i];
+        const outputStr = JSON.stringify(output, null, 0);
+        outputStream.write(outputStr + "\n");
+        appendFileSync(processState.outputFilePath, outputStr + "\n");
+    }
+    outputStream.end();
+}
+
+export async function main() {
     console.log("Starting focus project search");
     const processConfig = buildProcessConfigFromEnvVars();
     const newQueueConfig = buildNewQueueConfigFromEnvVars();
+    // store the output of current run as an array of objects
+    // these objects will be written to the output file at the end of the run
+    // TODO: how about, write to file as we go?
+    const currentRunOutput:FileOutput[] = [];
 
     console.log(`Read process config. GITHUB_TOKEN: "${processConfig.GITHUB_TOKEN.slice(0, 3)}...", RENEW_PERIOD_IN_DAYS: ${processConfig.RENEW_PERIOD_IN_DAYS}`);
     console.log(`Read new queue config: ${JSON.stringify(newQueueConfig)}`);
@@ -177,12 +202,15 @@ export function main() {
     console.log(`Latest process state: ${JSON.stringify(processState)}`);
 
     if (processState.completionDate != null) {
+        // convert to date
+        processState.completionDate = new Date(processState.completionDate);
+
         console.log("Previous queue is completed.");
         // start a new one, but only if RENEW_PERIOD_IN_DAYS has passed
         const now = new Date();
         const daysSinceCompletion = (now.getTime() - processState.completionDate.getTime()) / (1000 * 60 * 60 * 24);
         if (daysSinceCompletion < processConfig.RENEW_PERIOD_IN_DAYS) {
-            console.log("Previous process is completed, but RENEW_PERIOD_IN_DAYS hasn't passed yet. Exiting.");
+            console.log(`Previous process is completed, but RENEW_PERIOD_IN_DAYS of ${processConfig.RENEW_PERIOD_IN_DAYS} hasn't passed yet. It has been ${daysSinceCompletion} days. Exiting.`);
             return;
         }
         console.log("Previous queue is completed, and RENEW_PERIOD_IN_DAYS has passed. Starting a new queue.");
@@ -230,22 +258,58 @@ export function main() {
     taskQueue.on('taskcomplete', (result:TaskResult<RepositorySearchQuery>) => {
         let taskId = result.task.getId();
         if (result.success) {
-            console.log(`Task complete with success: ${taskId}, hasNextPage: ${result.result.search.pageInfo.hasNextPage}, endCursor: ${result.result.search.pageInfo.endCursor}`);
-
-            // TODO: store the result in the output map
-            // TODO: add new item to unresolved list from the output
+            console.log(`Task complete with success: ${taskId}, hasNextPage: ${result.output.search.pageInfo.hasNextPage}, endCursor: ${result.output.search.pageInfo.endCursor}`);
 
             console.log(`Moving resolved task to resolved list: ${taskId}`);
             processState.resolved[taskId] = processState.unresolved[taskId];
             delete processState.unresolved[taskId];
-        } else{
+
+            // region check rate limit
+            console.log(`Rate limit information after task the execution of ${taskId}: ${JSON.stringify(result.output.rateLimit)}`);
+
+            let remainingCallRights = result.output.rateLimit?.remaining;
+            let callLimit = result.output.rateLimit?.limit;
+
+            if (remainingCallRights == null || callLimit == null) {
+                console.log(`Rate limit information is not available after executing ${taskId}. Aborting.`);
+                abortController.abort();
+            }
+
+            remainingCallRights = remainingCallRights ? remainingCallRights : 0;
+            callLimit = callLimit ? callLimit : 1;
+
+            if ((remainingCallRights * 100 / callLimit) < processConfig.RATE_LIMIT_STOP_PERCENT) {
+                console.log(`Rate limit reached after executing ${taskId}. Aborting.`);
+                abortController.abort();
+            }
+            // endregion
+
+            if (result.output.search.nodes == null || result.output.search.nodes.length == 0) {
+                console.log(`No nodes found for ${taskId}.`);
+                return;
+            }
+
+            const summary = result.output.search.nodes;
+            console.log(`Number of nodes found for ${taskId}: ${summary.length}`);
+
+            for (let i = 0; i < result.output.search.nodes.length; i++) {
+                const repoSummary = <RepositorySummaryFragment>result.output.search.nodes[i];
+                currentRunOutput.push({
+                    taskId: taskId,
+                    result: repoSummary,
+                });
+            }
+
+            // TODO: add new item to unresolved list from the output
+            // TODO: add new item to task queue
+        } else {
             console.log(`Task complete with error: ${taskId}, error: ${result.error}`);
 
             console.log(`Moving errored task to errored list: ${taskId}`);
             delete processState.unresolved[taskId];
         }
 
-        // TODO: check the rate limit and abort if we are close to the limit
+        console.log(`Unresolved tasks: ${Object.keys(processState.unresolved).length}`);
     });
 
     taskQueue.on('taskerror', (error) => {
@@ -264,21 +328,37 @@ export function main() {
         },
     });
 
-    // TODO: instead of this single task, add the tasks from the `processState.unresolved` map
-    const task = new ProjectSearchTask(graphqlWithAuth, {
-        id: uuidv4(),
-        minStars: 100,
-        minForks: 100,
-        minSizeInKb: 1000,
-        hasActivityAfter: "2023-06-01",
-        createdAfter: "2018-01-01",
-        createdBefore: "2018-01-05",
-        pageSize: 100,
-        startCursor: null,
-    });
-    taskQueue.add(task);
+    // const task = new ProjectSearchTask(graphqlWithAuth, {
+    //     id: uuidv4(),
+    //     minStars: 100,
+    //     minForks: 100,
+    //     minSizeInKb: 1000,
+    //     hasActivityAfter: "2023-06-01",
+    //     createdAfter: "2018-01-01",
+    //     createdBefore: "2018-01-05",
+    //     pageSize: 100,
+    //     startCursor: null,
+    // });
 
+    for (let key in processState.unresolved) {
+        const task = new ProjectSearchTask(graphqlWithAuth, processState.unresolved[key]);
+        taskQueue.add(task);
+    }
+
+    console.log("Starting the task queue");
     taskQueue.start();
+    await taskQueue.finish();
+    console.log("Task queue finished");
+
+    if (Object.keys(processState.unresolved).length === 0) {
+        // no unresolved tasks, so the queue is completed.
+        // TODO: think about errored ones! retry them at the end? (this would need a retry counter in tasks)
+        processState.completionDate = new Date();
+    }
+
+    // TODO: write to both of the files when queue is aborted too!
+    saveProcessRunOutput(stateFile, processState, currentRunOutput);
+
 }
 
 class ProjectSearchTask extends BaseTask<RepositorySearchQuery> {

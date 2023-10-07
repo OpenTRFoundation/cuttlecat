@@ -8,7 +8,7 @@ interface TaskOptions {
 export interface TaskResult<ResultType> {
     task:Task<ResultType>;
     success:boolean;
-    result:ResultType;
+    output:ResultType;
     error:any;
 }
 
@@ -28,7 +28,7 @@ export abstract class BaseTask<ResultType> implements Task<ResultType> {
                 return {
                     task: this,
                     success: true,
-                    result: result,
+                    output: result,
                     error: null
                 };
             });
@@ -88,6 +88,10 @@ export class TaskQueue<ResultType> extends EventEmitter<'taskcomplete' | 'tasker
 
     start() {
         return this.backingQueue.start();
+    }
+
+    async finish(){
+        return this.backingQueue.onIdle();
     }
 
 }
