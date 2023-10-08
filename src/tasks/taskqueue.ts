@@ -72,10 +72,12 @@ export class TaskQueue<ResultType> extends EventEmitter<'taskcomplete' | 'tasker
         });
         this.signal = options.signal;
 
+        // TODO: is this gonna be needed after using `await taskQueue.add(task)` to handle the task results??
         this.backingQueue.on('completed', (result) => {
             this.emit('taskcomplete', result);
         });
 
+        // TODO: is this gonna be needed after using `await taskQueue.add(task)` to handle the task results??
         // TODO: when is this sent? Can we know which task?
         this.backingQueue.on('error', (error) => {
             this.emit('taskerror', error);
