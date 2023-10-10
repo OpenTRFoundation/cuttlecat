@@ -239,18 +239,20 @@ export async function main() {
     // When using GITHUB_TOKEN, the rate limit is 1,000 requests per hour per repository.
     //
     // Bottleneck is search endpoint, which is limited to 30 requests per minute.
-    // TODO: however, instead of using p-queue's cap limiting capabilities, we can just use as much as possible and
-    // TODO: stop processing when we've used the rate limit. This would help with using less GitHub action minutes.
-    // TODO: So, we should go with a higher cap.
+    //
+    // However, instead of using p-queue's cap limiting capabilities, we can just use as much as possible and
+    // stop processing when we've used the rate limit. This would help with using less GitHub action minutes.
+    // So, we should go with a higher cap.
 
     const taskQueue = new TaskQueue({
-        // TODO: as this search is IO bound, we should increase concurrency
-        concurrency: 2,
+        // As this search is IO bound, we should increase concurrency
+        concurrency: 8,
         // TODO: this is a bit too much, but needs experimenting.
         // Keeping the timeout too long will end up using too many GitHub actions minutes.
         // Keeping the timeout too short will result in too many errored items.
         perTaskTimeout: 20000,
-        intervalCap: 30,
+        // as explained above, let's increase the cap and abort when there's no rate limit left.
+        intervalCap: 30 * 10,
         interval: 60 * 1000,
         signal: abortController.signal
     });
