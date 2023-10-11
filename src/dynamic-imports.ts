@@ -31,9 +31,9 @@ type EventName = 'active' | 'idle' | 'empty' | 'add' | 'next' | 'completed' | 'e
 interface PQueue_t<EnqueueOptionsType extends QueueAddOptions = QueueAddOptions> extends EventEmitter<EventName> {
     new(options?:Options):PQueue_t;
 
-    add<TaskResultType>(function_:Task<TaskResultType>):Promise<TaskResultType> | void;
+    add<TaskResultType>(function_:Task<TaskResultType>):Promise<TaskResultType>;
 
-    add<TaskResultType>(function_:Task<TaskResultType>, options?:Partial<EnqueueOptionsType>):Promise<TaskResultType | void>;
+    add<TaskResultType>(function_:Task<TaskResultType>, options?:Partial<EnqueueOptionsType>):Promise<TaskResultType>;
 
     start():PQueue_t<EnqueueOptionsType>;
 

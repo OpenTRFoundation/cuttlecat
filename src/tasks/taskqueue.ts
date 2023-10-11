@@ -18,6 +18,8 @@ interface Task<ResultType> {
     createExecutable():(options:TaskOptions) => Promise<TaskResult<ResultType>>;
 
     execute(signal:AbortSignal):Promise<ResultType>;
+
+    nextTask(result:ResultType):Task<ResultType>;
 }
 
 export abstract class BaseTask<ResultType> implements Task<ResultType> {
@@ -25,6 +27,7 @@ export abstract class BaseTask<ResultType> implements Task<ResultType> {
         return async (options:TaskOptions) => {
             return this.execute(options?.signal).then((result) => {
                 // TODO: handle errors
+                // TODO: important
                 return {
                     task: this,
                     success: true,
@@ -37,6 +40,7 @@ export abstract class BaseTask<ResultType> implements Task<ResultType> {
 
     abstract getId():string;
     abstract execute(signal?:AbortSignal):Promise<ResultType>;
+    abstract nextTask(result:ResultType):BaseTask<ResultType>;
 }
 
 export interface TaskQueueOptions {
@@ -72,7 +76,6 @@ export class TaskQueue<ResultType> extends EventEmitter<'taskcomplete' | 'tasker
         });
         this.signal = options.signal;
 
-        // TODO: is this gonna be needed after using `await taskQueue.add(task)` to handle the task results??
         this.backingQueue.on('completed', (result) => {
             this.emit('taskcomplete', result);
         });
@@ -84,7 +87,7 @@ export class TaskQueue<ResultType> extends EventEmitter<'taskcomplete' | 'tasker
         });
     }
 
-    add(task:Task<ResultType>) {
+    add(task:Task<ResultType>):Promise<TaskResult<ResultType>> {
         return this.backingQueue.add(task.createExecutable(), {signal: this.signal});
     }
 

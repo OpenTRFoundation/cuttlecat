@@ -181,7 +181,6 @@ export async function main() {
     const newQueueConfig = buildNewQueueConfigFromEnvVars();
     // store the output of current run as an array of objects
     // these objects will be written to the output file at the end of the run
-    // TODO: how about, write to file as we go?
     const currentRunOutput:FileOutput[] = [];
 
     console.log(`Read process config. GITHUB_TOKEN: "${processConfig.GITHUB_TOKEN.slice(0, 3)}...", RENEW_PERIOD_IN_DAYS: ${processConfig.RENEW_PERIOD_IN_DAYS}, RATE_LIMIT_STOP_PERCENT: ${processConfig.RATE_LIMIT_STOP_PERCENT}`);
@@ -225,7 +224,6 @@ export async function main() {
     console.log(`Number of resolved tasks: ${Object.keys(processState.resolved).length}`);
     console.log(`Number of errored tasks: ${Object.keys(processState.errored).length}`);
 
-    // TODO: use the AbortController
     let abortController = new AbortController();
 
     // About rate limits...
@@ -244,7 +242,7 @@ export async function main() {
     // stop processing when we've used the rate limit. This would help with using less GitHub action minutes.
     // So, we should go with a higher cap.
 
-    const taskQueue = new TaskQueue({
+    const taskQueue = new TaskQueue<RepositorySearchQuery>({
         // As this search is IO bound, we should increase concurrency
         concurrency: 8,
         // TODO: this is a bit too much, but needs experimenting.
@@ -257,7 +255,6 @@ export async function main() {
         signal: abortController.signal
     });
 
-    // TODO: do not handle task result here. Instead, `await taskQueue.add(task)` and handle the result there.
     taskQueue.on('taskcomplete', (result:TaskResult<RepositorySearchQuery>) => {
         let taskId = result.task.getId();
         if (result.success) {
@@ -286,33 +283,50 @@ export async function main() {
 
             // region check rate limit
             console.log(`Rate limit information after task the execution of ${taskId}: ${JSON.stringify(result.output.rateLimit)}`);
+            let rateLimitReached = false;
 
             let remainingCallRights = result.output.rateLimit?.remaining;
             let callLimit = result.output.rateLimit?.limit;
 
             if (remainingCallRights == null || callLimit == null) {
-                console.log(`Rate limit information is not available after executing ${taskId}. Aborting.`);
-                abortController.abort();
-                return;
+                console.log(`Rate limit information is not available after executing ${taskId}.`);
+                rateLimitReached = true;
             }
 
             remainingCallRights = remainingCallRights ? remainingCallRights : 0;
-            // TODO: for testing aborts caused by rate limiting
-            // callLimit = 20;
 
-            if (remainingCallRights > (callLimit * processConfig.RATE_LIMIT_STOP_PERCENT / 100)) {
-                console.log(`Rate limit reached after executing ${taskId}. Aborting.`);
-                abortController.abort();
-                return;
+            if (callLimit && (remainingCallRights > (callLimit * processConfig.RATE_LIMIT_STOP_PERCENT / 100))) {
+                console.log(`Rate limit reached after executing ${taskId}.`);
+                rateLimitReached = true;
             }
             // endregion
 
-            // TODO: add new item to unresolved list from the output
-            // TODO: add new item to task queue
+            if (result.output.search.pageInfo.hasNextPage) {
+                const nextTask = <ProjectSearchTask>result.task.nextTask(result.output);
+                console.log(`Adding next task to unresolved: ${nextTask.getId()}`);
+                processState.unresolved[nextTask.getId()] = nextTask.options;
+
+                // if limit reached and gonna abort, add the next page to the list to persist it to process is next time.
+                // if not gonna abort, also add to the task queue to get it executed now.
+                if (!rateLimitReached) {
+                    // DO NOT await here, as it will block the loop
+                    // fire and forget.
+                    // the task will be added to the queue, and the queue will start executing it.
+                    // noinspection ES6MissingAwait
+                    console.log(`Adding next task to queue: ${nextTask.getId()}`);
+                    taskQueue.add(nextTask);
+                }
+            }
+
+            if (rateLimitReached) {
+                console.log(`Rate limit reached. Aborting the queue.`);
+                abortController.abort();
+            }
         } else {
             console.log(`Task complete with error: ${taskId}, error: ${result.error}`);
 
             console.log(`Moving errored task to errored list: ${taskId}`);
+            processState.errored[taskId] = processState.unresolved[taskId];
             delete processState.unresolved[taskId];
         }
 
@@ -322,71 +336,50 @@ export async function main() {
     // TODO: test with a task that throws an error
 
     taskQueue.on('taskerror', (error) => {
+        // if abort error, do nothing.
+        if (error.name !== 'AbortError') {
+            console.log("Error in task:", error);
+        }
+        // TODO: Is this needed?
+        // TODO: else, removed from unresolved list and add to errored list.
+
         // TODO: is the following correct?
         // This listener is called when the task queue itself encounters an error.
         // We don't have a reference to the task that caused the error, so we can't
         // move it to the errored list.
         // It will stay in the unresolved list, and will be retried later on.
         // TODO: need to identify if this was an abort, so the task was not actually errored and it should stay in the unresolved list.
-        console.log("taskerror", error);
+        // console.log("taskerror", error);
     });
 
     const graphqlWithAuth = graphql.defaults({
         headers: {
             Authorization: `bearer ${processConfig.GITHUB_TOKEN}`,
         },
-        // TODO: this works, but should we use a separate signal for each request instead? (probably not)
+        // use the same signal for the graphql calls as well (HTTP requests)
         request: {
             signal: abortController.signal,
         }
     });
 
-    // const task = new ProjectSearchTask(graphqlWithAuth, {
-    //     id: uuidv4(),
-    //     minStars: 100,
-    //     minForks: 100,
-    //     minSizeInKb: 1000,
-    //     hasActivityAfter: "2023-06-01",
-    //     createdAfter: "2018-01-01",
-    //     createdBefore: "2018-01-05",
-    //     pageSize: 100,
-    //     startCursor: null,
-    // });
-
-    // TODO: handle task result in here, instead of using the event listeners of the p-queue.
-    // TODO: it feels better to handle the result in here, as we have access to the task object.
-    // TODO: actually, we can remove the reference to the task object from the result object.
-    // const addAndStartTask = async (task:ProjectSearchTask) => {
-    //     console.log(`Adding task to queue: ${task.getId()}`);
-    //     try {
-    //         let promise = taskQueue.add(task);
-    //         console.log(`Task added to queue: ${task.getId()}`);
-    //         const result = await promise;
-    //
-    //     } catch (_error) {
-    //         let err = _error as Error;
-    //         console.log(`Error adding task to queue: ${task.getId()}`);
-    //         if (err.name !== 'AbortError') {
-    //             console.log(err);
-    //             throw err;
-    //         }
-    //     }
-    // }
-
     for (let key in processState.unresolved) {
         const task = new ProjectSearchTask(graphqlWithAuth, processState.unresolved[key]);
         console.log(`Adding task to queue: ${task.getId()}`);
-        taskQueue.add(task);
         // DO NOT await here, as it will block the loop
         // fire and forget.
         // the task will be added to the queue, and the queue will start executing it.
         // noinspection ES6MissingAwait
-        // addAndStartTask(task);
+        taskQueue.add(task);
     }
 
     console.log("Starting the task queue");
     taskQueue.start();
-    await taskQueue.finish();
+    try {
+        await taskQueue.finish();
+    } catch (e) {
+        console.log("Error while finishing the task queue", e);
+        console.log(e);
+    }
     console.log("Task queue finished");
 
     if (Object.keys(processState.unresolved).length === 0) {
@@ -426,8 +419,6 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery> {
         // console.log(RepositorySearch.loc!.source.body);
 
         // TODO: use await instead of stupid chain of promise handlers
-        // TODO: handle abort signal
-        // TODO: do we actually pass the signal to the graphql client?
         let promise = this.graphqlWithAuth(
             RepositorySearch.loc!.source.body,
             {
@@ -447,12 +438,21 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery> {
             throw error;
         });
 
-        // signal.onabort = () => {
-        //     console.log(`Aborting task: ${this.getId()}`);
-        //     promise.
-        // }
-
         return promise;
+    }
+
+    nextTask(result:RepositorySearchQuery):ProjectSearchTask {
+        return new ProjectSearchTask(this.graphqlWithAuth, {
+            id: uuidv4(),
+            minStars: this.options.minStars,
+            minForks: this.options.minForks,
+            minSizeInKb: this.options.minSizeInKb,
+            hasActivityAfter: this.options.hasActivityAfter,
+            createdAfter: this.options.createdAfter,
+            createdBefore: this.options.createdBefore,
+            pageSize: this.options.pageSize,
+            startCursor: <string>result.search.pageInfo.endCursor,
+        });
     }
 }
 
