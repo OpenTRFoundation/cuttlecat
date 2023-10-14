@@ -38,6 +38,12 @@ interface PQueue_t<EnqueueOptionsType extends QueueAddOptions = QueueAddOptions>
     start():PQueue_t<EnqueueOptionsType>;
 
     onIdle():Promise<void>;
+
+    clear():void;
+
+    size:number;
+    pending:number;
+    isPaused:boolean;
 }
 
 let PQueue:PQueue_t;
@@ -47,7 +53,7 @@ export default async function loadDynamicImports() {
     // This means, we can't `import` it regularly.
     // We can make this application an ESM module, but this time `graphql-tag` won't work,
     // as it uses Typescript `namespace`s, which can't be used by ESM modules.
-    // See TODO: add link to the issue created
+    // See https://github.com/apollographql/graphql-tag/issues/804
     if (!PQueue) {
         PQueue = <PQueue_t>(<unknown>(await import('p-queue')).default);
     }
