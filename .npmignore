@@ -1,1 +1,10 @@
 # keep this file so that npm doesn't use the .gitignore file
+.github
+.idea
+.actrc
+act-event.json
+tsconfig.json
+.nvmrc
+codegen.ts
+codegen.js
+src/

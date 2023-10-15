@@ -64,3 +64,20 @@ To start the process with defaults:
 GITHUB_TOKEN="ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" \
 npm run start
 ```
+
+## Running tests
+
+TODO: tests
+```shell
+```
+
+## Running GitHub Actions locally
+
+TODO: don't use the branch `focus-project-search-periodic` locally?
+```shell
+  act --job=<job-name> \
+  -s GITHUB_TOKEN="$(gh auth token)" \
+  --reuse=true \
+  --use-gitignore=true \
+  --remote-name=origin
+```

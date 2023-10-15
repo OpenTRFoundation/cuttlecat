@@ -1,15 +1,35 @@
 {
-  "name": "cuttlecat",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@opentr/cuttlecat",
+  "version": "0.0.1",
+  "description": "CuttleCat collects information from GitHub about open source contributors and their contributions.",
+  "keywords": [
+    "github",
+    "graphql",
+    "open source",
+    "contributors",
+    "contributions"
+  ],
+  "author": "Ali Ok",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/OpenTRFoundation/cuttlecat",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OpenTRFoundation/cuttlecat"
+  },
+
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bin": {
+    "cuttlecat": "./dist/index.js"
+  },
+  "main": "dist/index.js",
   "scripts": {
     "start": "npx tsc && node dist/index.js",
     "build": "rimraf ./dist && npm run codegen && tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "codegen": "graphql-codegen --config codegen.ts"
   },
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "@graphql-codegen/cli": "5.0.0",
     "@graphql-codegen/named-operations-object": "^2.3.1",
@@ -23,9 +43,7 @@
     "@types/node": "^20.6.3",
     "@types/uuid": "^9.0.4",
     "chai": "^4.3.10",
-    "envalid": "^8.0.0",
     "mocha": "^10.2.0",
-    "nodemon": "^3.0.1",
     "rimraf": "^5.0.1",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
@@ -34,6 +52,7 @@
     "@octokit/graphql": "^7.0.1",
     "@types/lodash": "^4.14.199",
     "date-fns": "^2.30.0",
+    "envalid": "^8.0.0",
     "eventemitter3": "^5.0.1",
     "graphql": "^16.8.1",
     "p-queue": "^7.4.1",
