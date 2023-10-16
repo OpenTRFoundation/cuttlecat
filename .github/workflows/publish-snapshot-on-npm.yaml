@@ -28,10 +28,15 @@ jobs:
         run: |
           # get the short git hash
           git_hash=$(git rev-parse --short "$GITHUB_SHA")
-          # get today's date
-          today=$(date +'%Y%m%d')
+          # get timestamp
+          now=$(date +'%Y%m%d%H%M%S')
+          # get the current version from package.json
+          version=$(jq -r '.version' package.json)
+          new_version="${version}-snapshot.${git_hash}.${now}"
+          
           # update the version in package.json
-          npm version prerelease --no-git-tag-version --preid="snapshot.${git_hash}.${today}"
+          jq --arg new_version "$new_version" '.version = $new_version' package.json > package.json.tmp
+          cat package.json.tmp > package.json
 
       - name: Clean install
         run: |

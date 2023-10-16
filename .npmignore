@@ -8,3 +8,4 @@ tsconfig.json
 codegen.ts
 codegen.js
 src/
+package.json.tmp
