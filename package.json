@@ -55,7 +55,8 @@
     "eventemitter3": "^5.0.1",
     "graphql": "^16.8.1",
     "p-queue": "^7.4.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "graphql-tag": "^2.12.6"
   },
   "bugs": {
     "url": "https://github.com/OpenTRFoundation/cuttlecat/issues"
