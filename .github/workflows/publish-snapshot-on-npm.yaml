@@ -1,14 +1,15 @@
-name: Publish on NPM
+name: Publish snapshot on NPM
 
 on:
+  # When manually triggered
   workflow_dispatch:
-  # When there's a release created
-  release:
-    types: [ published ]
+  # When there's a new commit in main branch
+  push:
+    branches: [ "main" ]
 
 jobs:
-  publish-on-npm:
-    name: Publish package on NPM
+  publish-snapshot-on-npm:
+    name: Publish snapshot on NPM
     runs-on: ubuntu-latest
 
     steps:
@@ -22,6 +23,19 @@ jobs:
         run: |
           node --version
           npm --version
+
+      - name: Update the local version to snapshot (not persisted in Git)
+        run: |
+          # get the short git hash
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          # get today's date
+          today=$(date +'%Y%m%d')
+          # update the version in package.json
+          npm version prerelease --no-git-tag-version --preid="snapshot.${git_hash}.${today}"
+
+      - name: Clean install
+        run: |
+          npm ci
 
       - name: Clean install
         run: |
@@ -41,3 +55,4 @@ jobs:
           access: public
           # do not actually publish if testing this workflow locally
           dry-run: ${{ github.event.act }}
+          tag: next

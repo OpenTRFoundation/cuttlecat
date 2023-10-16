@@ -80,10 +80,21 @@ npm run test
 
 ## Testing GitHub Actions workflows locally
 
-### Test release
+### Test publish release
 
 ```shell
-  act --job=publish-on-npm \
+  act --job=publish-release-on-npm \
+  -s GITHUB_TOKEN="$(gh auth token)" \
+  -s NPM_TOKEN="FAKE TOKEN" \
+  --reuse=true \
+  --use-gitignore=true \
+  --remote-name=origin
+```
+
+### Test publish snapshot
+
+```shell
+  act --job=publish-snapshot-on-npm \
   -s GITHUB_TOKEN="$(gh auth token)" \
   -s NPM_TOKEN="FAKE TOKEN" \
   --reuse=true \
