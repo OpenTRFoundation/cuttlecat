@@ -55,6 +55,9 @@ function buildProcessConfigFromEnvVars() {
         GITHUB_TOKEN: str({
             desc: "(not persisted in process file) GitHub API token. Token doesn't need any permissions."
         }),
+        DATA_DIRECTORY: str({
+            desc: "(not persisted in process file) Data directory to read and store the output."
+        }),
         RENEW_PERIOD_IN_DAYS: num({
             default: 7,
             desc: "(not persisted in process file) if previous queue is completed, create the next one after RENEW_PERIOD_IN_DAYS days"
@@ -284,8 +287,7 @@ export async function main() {
     const currentRunOutput:FileOutput[] = [];
 
     const fileSystem = new FileSystem(
-        __dirname,
-        "../data/focus-project-search",
+        processConfig.DATA_DIRECTORY,
         "process-state-",
         ".json",
         "process-output-",

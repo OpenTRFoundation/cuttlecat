@@ -1,6 +1,6 @@
 {
   "name": "@opentr/cuttlecat",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "CuttleCat collects information from GitHub about open source contributors and their contributions.",
   "keywords": [
     "github",
@@ -11,23 +11,22 @@
   ],
   "author": "Ali Ok",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/OpenTRFoundation/cuttlecat",
+  "homepage": "https://opentr.foundation/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenTRFoundation/cuttlecat"
+    "url": "git+https://github.com/OpenTRFoundation/cuttlecat.git"
   },
-
   "engines": {
     "node": ">=18.0.0"
   },
   "bin": {
-    "cuttlecat": "./dist/index.js"
+    "cuttlecat": "dist/index.js"
   },
   "main": "dist/index.js",
   "scripts": {
     "start": "npx tsc && node dist/index.js",
     "build": "rimraf ./dist && npm run codegen && tsc",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha --require ts-node/register ./src/**/*.test.ts",
     "codegen": "graphql-codegen --config codegen.ts"
   },
   "devDependencies": {

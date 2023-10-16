@@ -32,6 +32,7 @@ Supports the following environment variables:
 | Name                              | Description                                                                                                       | Default value | Persisted |
 |-----------------------------------|-------------------------------------------------------------------------------------------------------------------|---------------|-----------|
 | `GITHUB_TOKEN`                    | GitHub API token. Token doesn't need any permissions.                                                             | N/A           | No        |
+| `DATA_DIRECTORY`                  | Data directory to read and store the output.                                                                      | N/A           | No        |
 | `RENEW_PERIOD_IN_DAYS`            | if previous queue is completed, create the next one after RENEW_PERIOD_IN_DAYS days                               | 7             | No        |
 | `CONCURRENCY`                     | number of concurrent tasks                                                                                        | 6             | No        |
 | `PER_TASK_TIMEOUT_IN_MS`          | timeout for each task                                                                                             | 30000         | No        |
@@ -61,22 +62,30 @@ The output will be written to the `./data/focus-project-search` directory.
 To start the process with defaults:
 
 ```shell
-GITHUB_TOKEN="ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" \
+# store the results in a temporary directory
+mkdir -p /tmp/foo/bar
+
+GITHUB_TOKEN="$(gh auth token)" \
+DATA_DIRECTORY="/tmp/foo/bar" \
+PROCESS="FOCUS_PROJECT_SEARCH" \
+MIN_AGE_IN_DAYS=5700 \
 npm run start
 ```
 
 ## Running tests
 
-TODO: tests
 ```shell
+npm run test
 ```
 
-## Running GitHub Actions locally
+## Testing GitHub Actions workflows locally
 
-TODO: don't use the branch `focus-project-search-periodic` locally?
+### Test release
+
 ```shell
-  act --job=<job-name> \
+  act --job=publish-on-npm \
   -s GITHUB_TOKEN="$(gh auth token)" \
+  -s NPM_TOKEN="FAKE TOKEN" \
   --reuse=true \
   --use-gitignore=true \
   --remote-name=origin

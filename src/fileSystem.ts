@@ -1,17 +1,15 @@
-import {readdirSync} from "fs";
+import {existsSync, readdirSync} from "fs";
 import {join} from "path";
 import {nowTimestamp} from "./utils";
 
 export default class FileSystem {
-    private readonly workingDirectoryPath:string;
     private readonly dataDirectoryPath:string;
     private readonly processStateFilePrefix:string;
     private readonly processStateFileExtension:string;
     private readonly processOutputFilePrefix:string;
     private readonly processOutputFileExtension:string;
 
-    constructor(workingDirectoryPath:string, dataDirectoryPath:string, processStateFilePrefix:string, processStateFileExtension:string, processOutputFilePrefix:string, processOutputFileExtension:string) {
-        this.workingDirectoryPath = workingDirectoryPath;
+    constructor(dataDirectoryPath:string, processStateFilePrefix:string, processStateFileExtension:string, processOutputFilePrefix:string, processOutputFileExtension:string) {
         this.dataDirectoryPath = dataDirectoryPath;
         this.processStateFilePrefix = processStateFilePrefix;
         this.processStateFileExtension = processStateFileExtension;
@@ -19,27 +17,25 @@ export default class FileSystem {
         this.processOutputFileExtension = processOutputFileExtension;
     }
 
-    getDataDirectoryAbsolutePath() {
-        return join(this.workingDirectoryPath, this.dataDirectoryPath);
-    }
-
     getLatestProcessStateFile() {
         // read data directory and find the latest process state file
-        // process state files start with "process-state-" and end with ".json"
-        let dataDirAbs = this.getDataDirectoryAbsolutePath();
-        let files = readdirSync(dataDirAbs);
+
+        if (!existsSync(this.dataDirectoryPath)) {
+            throw new Error("Data directory does not exist: " + this.dataDirectoryPath);
+        }
+
+        let files = readdirSync(this.dataDirectoryPath);
         files = files.filter((file) => file.startsWith(this.processStateFilePrefix) && file.endsWith(this.processStateFileExtension));
         files.sort();
         if (files.length == 0) {
             return null;
         }
-        return join(dataDirAbs, files[files.length - 1]);
+        return join(this.dataDirectoryPath, files[files.length - 1]);
     }
 
     getPathOfNewProcessStateFile() {
-        let dataDirAbs = this.getDataDirectoryAbsolutePath();
         const timestamp = nowTimestamp();
-        return join(dataDirAbs, this.processStateFilePrefix + timestamp + this.processStateFileExtension);
+        return join(this.dataDirectoryPath, this.processStateFilePrefix + timestamp + this.processStateFileExtension);
     }
 
     getNewProcessOutputFileName() {
@@ -48,7 +44,7 @@ export default class FileSystem {
     }
 
     getOutputFilePath(outputFileName:string) {
-        return join(this.getDataDirectoryAbsolutePath(), outputFileName);
+        return join(this.dataDirectoryPath, outputFileName);
     }
 }
 
