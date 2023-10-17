@@ -46,6 +46,10 @@ interface Task<ResultType, TaskSpec> {
     getDebugInstructions():string;
 
     narrowedDownTasks():Task<ResultType, TaskSpec>[] | null;
+
+    shouldRecordAsError(error:any):boolean;
+
+    extractOutputFromError(error:any):ResultType;
 }
 
 export interface TaskError {
@@ -108,6 +112,10 @@ export abstract class BaseTask<ResultType, TaskSpec> implements Task<ResultType,
     abstract getDebugInstructions():string;
 
     abstract narrowedDownTasks():Task<ResultType, TaskSpec>[] | null;
+
+    abstract shouldRecordAsError(error:any):boolean;
+
+    abstract extractOutputFromError(error:any):ResultType;
 }
 
 export interface TaskQueueOptions {
@@ -153,6 +161,8 @@ export class TaskQueue<ResultType, TaskSpec> {
     add(task:Task<ResultType, TaskSpec>):void {
         this.taskStore.unresolved[task.getId()] = task.getSpec();
         (async () => {
+            let output:ResultType = <ResultType>null;
+
             try {
                 if (this.abortController.signal.aborted) {
                     console.log(`Task queue is aborted, hence not adding new task ${task.getId()} to the backing queue.`);
@@ -160,34 +170,7 @@ export class TaskQueue<ResultType, TaskSpec> {
                 }
                 let taskResult = await this.backingQueue.add(task.createExecutable(), {signal: this.abortController.signal});
                 console.log(`Task ${task.getId()} done`);
-
-                // remove from unresolved, add to resolved
-                this.taskStore.resolved[task.getId()] = task.getSpec();
-                delete this.taskStore.unresolved[task.getId()];
-
-                // if this task was previously errored, remove it from the errored list
-                if (this.taskStore.errored[task.getId()]) {
-                    delete this.taskStore.errored[task.getId()];
-                }
-
-                // task should store its own output somewhere
-                task.saveOutput(taskResult.output);
-
-                // if the task identifies that there's an issue and the processing should stop (like rate limits),
-                // we should abort the queue
-                if (task.shouldAbort(taskResult.output)) {
-                    console.log(`Task ${task.getId()} identified that processing should stop, aborting queue.`);
-                    this.abortController.abort();
-                    this.backingQueue.clear();
-                    return;
-                }
-
-                let nextTask = task.nextTask(taskResult.output);
-                if (nextTask) {
-                    console.log(`Found next task ${nextTask.getId()} for task ${task.getId()}, adding to queue.`);
-                    nextTask.setOriginatingTaskId(task.getId());
-                    this.add(nextTask);
-                }
+                output = taskResult.output;
             } catch (e) {
                 // in case of an abort, we don't want to add the task to the errored list
                 if (e instanceof Error && e.constructor.name === 'AbortError') {
@@ -203,57 +186,99 @@ export class TaskQueue<ResultType, TaskSpec> {
                     return;
                 }
 
-                // at this stage, we have a proper error
-                // let's ask the task for an error message, so that we can store it along with the task
-                const errorMessage = task.getErrorMessage(e);
+                // sometimes, errors are not really errors
+                // such as, the case with partial GraphQL responses.
+                // in other cases though, errors are real errors
+                if (task.shouldRecordAsError(e)) {
+                    // at this stage, we have a proper error
+                    // let's ask the task for an error message, so that we can store it along with the task
+                    const errorMessage = task.getErrorMessage(e);
 
-                console.log("Task errored: ", task.getId(), errorMessage);
-                if (!this.taskStore.errored[task.getId()]) {
-                    this.taskStore.errored[task.getId()] = {
-                        task: task.getSpec(),
-                        debug: task.getDebugInstructions(),
-                        errors: [{message: errorMessage, date: new Date()}],
+                    console.log("Task errored: ", task.getId(), errorMessage);
+                    if (!this.taskStore.errored[task.getId()]) {
+                        this.taskStore.errored[task.getId()] = {
+                            task: task.getSpec(),
+                            debug: task.getDebugInstructions(),
+                            errors: [{message: errorMessage, date: new Date()}],
+                        }
+                    } else {
+                        this.taskStore.errored[task.getId()].errors.push(
+                            {message: errorMessage, date: new Date()}
+                        );
+                    }
+                    delete this.taskStore.unresolved[task.getId()];
+
+                    const taskErrorCount = this.taskStore.errored[task.getId()].errors.length;
+                    if (taskErrorCount < this.retryCount + 1) {
+                        console.log(`Task ${task.getId()} errored, retrying. Error count: ${taskErrorCount}, max retry count: ${this.retryCount}`);
+                        this.add(task);
+                    } else {
+                        // Before giving up on tasks that errored N times, ask them to create narrowed done subtasks.
+                        // If they won't, give up on them.
+                        //
+                        // The purpose here is that a task might be too ambitious (e.g. tries to get a big chunk of data for a long period of time)
+                        // and it might fail because of server side errors or timeouts.
+                        // If the task reduces its ambition, it might be able to get the data in smaller chunks.
+                        //
+                        // If task returns new tasks, add them to the queue.
+                        // The original task should be archived in that case.
+                        // The new tasks need to have a relation to the archived original task for traceability.
+
+                        console.log(`Task ${task.getId()} errored for ${taskErrorCount} times which is more than the retry count: ${this.retryCount}.`);
+                        console.log("Going to check if it can create narrowed down tasks.");
+
+                        const narrowedDownTasks = task.narrowedDownTasks();
+                        if (narrowedDownTasks && narrowedDownTasks.length > 0) {
+                            console.log(`Task ${task.getId()} returned ${narrowedDownTasks.length} narrowed down tasks, adding them to the queue and archiving the original task.`);
+                            for (let narrowedDownTask of narrowedDownTasks) {
+                                narrowedDownTask.setParentId(task.getId());
+                                this.add(narrowedDownTask);
+                            }
+                            // remove the original task from errored list and add it to archived
+                            // it has been already removed from the unresolved list
+                            this.taskStore.archived[task.getId()] = this.taskStore.errored[task.getId()];
+                            delete this.taskStore.errored[task.getId()];
+                        } else {
+                            console.log(`Task ${task.getId()} did not return any narrowed down tasks, keeping it in the errored list.`);
+                        }
                     }
                 } else {
-                    this.taskStore.errored[task.getId()].errors.push(
-                        {message: errorMessage, date: new Date()}
-                    );
+                    console.log("Task errored, but it is not a real error, continuing. Task id: ", task.getId());
+                    output = task.extractOutputFromError(e);
                 }
+            }
+
+            if (output) {
+                // we got the output. it can be the result of a task that completed successfully, or a task that errored
+                // and returned a result from an errored response.
+                // in both cases, we want to process the output.
+
+                // remove from unresolved, add to resolved
+                this.taskStore.resolved[task.getId()] = task.getSpec();
                 delete this.taskStore.unresolved[task.getId()];
 
-                const taskErrorCount = this.taskStore.errored[task.getId()].errors.length;
-                if (taskErrorCount < this.retryCount + 1) {
-                    console.log(`Task ${task.getId()} errored, retrying. Error count: ${taskErrorCount}, max retry count: ${this.retryCount}`);
-                    this.add(task);
-                } else {
-                    // Before giving up on tasks that errored N times, ask them to create narrowed done subtasks.
-                    // If they won't, give up on them.
-                    //
-                    // The purpose here is that a task might be too ambitious (e.g. tries to get a big chunk of data for a long period of time)
-                    // and it might fail because of server side errors or timeouts.
-                    // If the task reduces its ambition, it might be able to get the data in smaller chunks.
-                    //
-                    // If task returns new tasks, add them to the queue.
-                    // The original task should be archived in that case.
-                    // The new tasks need to have a relation to the archived original task for traceability.
+                // if this task was previously errored, remove it from the errored list
+                if (this.taskStore.errored[task.getId()]) {
+                    delete this.taskStore.errored[task.getId()];
+                }
 
-                    console.log(`Task ${task.getId()} errored for ${taskErrorCount} times which is more than the retry count: ${this.retryCount}.`);
-                    console.log("Going to check if it can create narrowed down tasks.");
+                // task should store its own output somewhere
+                task.saveOutput(output);
 
-                    const narrowedDownTasks = task.narrowedDownTasks();
-                    if (narrowedDownTasks && narrowedDownTasks.length > 0) {
-                        console.log(`Task ${task.getId()} returned ${narrowedDownTasks.length} narrowed down tasks, adding them to the queue and archiving the original task.`);
-                        for (let narrowedDownTask of narrowedDownTasks) {
-                            narrowedDownTask.setParentId(task.getId());
-                            this.add(narrowedDownTask);
-                        }
-                        // remove the original task from errored list and add it to archived
-                        // it has been already removed from the unresolved list
-                        this.taskStore.archived[task.getId()] = this.taskStore.errored[task.getId()];
-                        delete this.taskStore.errored[task.getId()];
-                    } else {
-                        console.log(`Task ${task.getId()} did not return any narrowed down tasks, keeping it in the errored list.`);
-                    }
+                // if the task identifies that there's an issue and the processing should stop (like rate limits),
+                // we should abort the queue
+                if (task.shouldAbort(output)) {
+                    console.log(`Task ${task.getId()} identified that processing should stop, aborting queue.`);
+                    this.abortController.abort();
+                    this.backingQueue.clear();
+                    return;
+                }
+
+                let nextTask = task.nextTask(output);
+                if (nextTask) {
+                    console.log(`Found next task ${nextTask.getId()} for task ${task.getId()}, adding to queue.`);
+                    nextTask.setOriginatingTaskId(task.getId());
+                    this.add(nextTask);
                 }
             }
         })();

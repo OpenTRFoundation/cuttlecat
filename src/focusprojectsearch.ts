@@ -1,4 +1,4 @@
-import {graphql, GraphqlResponseError} from "@octokit/graphql";
+import {graphql} from "@octokit/graphql";
 import {v4 as uuidv4} from 'uuid';
 import {RepositorySearch, RepositorySearchQuery, RepositorySummaryFragment} from "./generated/queries";
 import {cleanEnv, num, str} from 'envalid'
@@ -616,10 +616,13 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery, ProjectSearchTas
 
         for (let i = 0; i < nodes.length; i++) {
             const repoSummary = <RepositorySummaryFragment>nodes[i];
-            this.currentRunOutput.push({
-                taskId: this.getId(),
-                result: repoSummary,
-            });
+            // items in the array might be null, in case of partial responses
+            if (repoSummary) {
+                this.currentRunOutput.push({
+                    taskId: this.getId(),
+                    result: repoSummary,
+                });
+            }
         }
     }
 
@@ -662,109 +665,9 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery, ProjectSearchTas
     }
 
     getErrorMessage(error:any):string {
-        // request: {
-        //     query: '\n' +
-        //       '    query RepositorySearch($searchString: String!, $first: Int!, $after: String) {\n' +
-        //       '  rateLimit {\n' +
-        //       '    cost\n' +
-        //       '    limit\n' +
-        //       '    nodeCount\n' +
-        //       '    remaining\n' +
-        //       '    resetAt\n' +
-        //       '    used\n' +
-        //       '  }\n' +
-        //       '  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n' +
-        //       '    pageInfo {\n' +
-        //       '      startCursor\n' +
-        //       '      hasNextPage\n' +
-        //       '      endCursor\n' +
-        //       '    }\n' +
-        //       '    repositoryCount\n' +
-        //       '    nodes {\n' +
-        //       '      ...RepositorySummary\n' +
-        //       '    }\n' +
-        //       '  }\n' +
-        //       '}\n' +
-        //       '    \n' +
-        //       '    fragment RepositorySummary on Repository {\n' +
-        //       '  nameWithOwner\n' +
-        //       '  isInOrganization\n' +
-        //       '  owner {\n' +
-        //       '    login\n' +
-        //       '  }\n' +
-        //       '  forkCount\n' +
-        //       '  stargazerCount\n' +
-        //       '  pullRequests {\n' +
-        //       '    totalCount\n' +
-        //       '  }\n' +
-        //       '  issues {\n' +
-        //       '    totalCount\n' +
-        //       '  }\n' +
-        //       '  mentionableUsers {\n' +
-        //       '    totalCount\n' +
-        //       '  }\n' +
-        //       '  watchers {\n' +
-        //       '    totalCount\n' +
-        //       '  }\n' +
-        //       '}\n' +
-        //       '    ',
-        //     variables: {
-        //       searchString: 'is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-07-19 created:2011-11-01..2011-11-06',
-        //       first: 100,
-        //       after: null
-        //     }
-        //   },
-        //   headers: {
-        //     'access-control-allow-origin': '*',
-        //     'access-control-expose-headers': 'ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset',
-        //     'content-encoding': 'gzip',
-        //     'content-security-policy': "default-src 'none'",
-        //     'content-type': 'application/json; charset=utf-8',
-        //     date: 'Tue, 17 Oct 2023 15:25:57 GMT',
-        //     'referrer-policy': 'origin-when-cross-origin, strict-origin-when-cross-origin',
-        //     server: 'GitHub.com',
-        //     'strict-transport-security': 'max-age=31536000; includeSubdomains; preload',
-        //     'transfer-encoding': 'chunked',
-        //     vary: 'Accept-Encoding, Accept, X-Requested-With',
-        //     'x-content-type-options': 'nosniff',
-        //     'x-frame-options': 'deny',
-        //     'x-github-media-type': 'github.v3; format=json',
-        //     'x-github-request-id': '9482:0A32:10DE46F:2241722:652EA781',
-        //     'x-ratelimit-limit': '1000',
-        //     'x-ratelimit-remaining': '844',
-        //     'x-ratelimit-reset': '1697559058',
-        //     'x-ratelimit-resource': 'graphql',
-        //     'x-ratelimit-used': '156',
-        //     'x-xss-protection': '0'
-        //   },
-        //   response: {
-        //     data: { rateLimit: [Object], search: [Object] },
-        //     errors: [ [Object] ]
-        //   },
-        //   errors: [
-        //     {
-        //       type: 'FORBIDDEN',
-        //       path: [Array],
-        //       extensions: [Object],
-        //       locations: [Array],
-        //       message: 'Although you appear to have the correct authorization credentials, the `heroku` organization has an IP allow list enabled, and your IP address is not permitted to access this resource.'
-        //     }
-        //   ],
-        //   data: {
-        //     rateLimit: {
-        //       cost: 1,
-        //       limit: 1000,
-        //       nodeCount: 100,
-        //       remaining: 844,
-        //       resetAt: '2023-10-17T16:10:58Z',
-        //       used: 156
-        //     },
-        //     search: { pageInfo: [Object], repositoryCount: 36, nodes: [Array] }
-        //   }
-
         // `error instanceof GraphqlResponseError` doesn't work
         // so, need to do some hacks
-        if ((<any>error).headers) {
+        if (error.headers) {
             // First check if this is a secondary rate limit error
             // In this case, we should've already aborted earlier.
             if (error.headers['retry-after']) {
@@ -786,27 +689,6 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery, ProjectSearchTas
                 message += ` Data: ${JSON.stringify(error.data)}.`;
             }
 
-            // TODO: temp change to log shit out
-            if(error.data){
-                console.log("There's partial data.")
-                const partialData:RepositorySearchQuery = error.data;
-                console.log("Rate limit: ", JSON.stringify(partialData.rateLimit));
-
-                let nodes = error.data?.search?.nodes;
-
-                if (!nodes || nodes.length == 0) {
-                    console.log(`No nodes found for ${this.getId()}.`);
-                    nodes = [];
-                }
-
-                console.log(`Number of nodes found for ${this.getId()}: ${nodes.length}`);
-
-                for (let i = 0; i < nodes.length; i++) {
-                    const repoSummary = <RepositorySummaryFragment>nodes[i];
-                    console.log(JSON.stringify(repoSummary));
-                }
-            }
-
             return message;
         }
 
@@ -814,6 +696,21 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery, ProjectSearchTas
             return error.message;
         }
         return JSON.stringify(error);
+    }
+
+    shouldRecordAsError(error:any):boolean {
+        // if `headers` are missing, then we don't have an actual response
+        // if data is missing, then we don't have a partial response.
+        // see https://github.com/octokit/graphql.js/blob/9c0643d34f36ed558e55193438d7aa8b031ca43d/README.md#partial-responses
+        return !error.headers || !error.data;
+    }
+
+    extractOutputFromError(error:any):RepositorySearchQuery {
+        if (error.data) {
+            return <RepositorySearchQuery>error.data;
+        }
+        // this should never happen as `shouldRecordAsError` should've returned true in that case already
+        throw new Error("Invalid error object. Can't extract output from error.");
     }
 
     getDebugInstructions():string {
