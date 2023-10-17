@@ -23,6 +23,7 @@ interface QueueConfig {
 interface ProjectSearchTaskOptions {
     id:string;
     parentId:string | null;
+    originatingTaskId:string | null;
     minStars:number;
     minForks:number;
     minSizeInKb:number;
@@ -216,6 +217,7 @@ function createNewProcessState(startingConfig:QueueConfig, outputFileName:string
         newTasks.push({
             id: key,
             parentId: null,
+            originatingTaskId: null,
             minStars: startingConfig.MIN_STARS,
             minForks: startingConfig.MIN_FORKS,
             minSizeInKb: startingConfig.MIN_SIZE_IN_KB,
@@ -472,6 +474,10 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery, ProjectSearchTas
         this.options.parentId = id;
     }
 
+    setOriginatingTaskId(id:string):void {
+        this.options.originatingTaskId = id;
+    }
+
     async execute(signal:AbortSignal):Promise<RepositorySearchQuery> {
         console.log("Executing task: ", this.getId());
         if (signal.aborted) {
@@ -526,6 +532,7 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery, ProjectSearchTas
                 {
                     id: uuidv4(),
                     parentId: null,
+                    originatingTaskId: this.getId(),
                     minStars: this.options.minStars,
                     minForks: this.options.minForks,
                     minSizeInKb: this.options.minSizeInKb,
@@ -545,9 +552,13 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery, ProjectSearchTas
         // Project search can't narrow down the scopes of the tasks that start from a cursor.
         // That's because:
         // - The cursor is bound to the date range previously used.
+        // In that case, add narrowed down tasks for the originating task. That's the task that caused the creation of
+        // this task with a start cursor.
+        // However, this means, some date ranges will be searched twice and there will be duplicate output.
+        // It is fine though! We can filter the output later.
         if (this.options.startCursor) {
             console.log(`Narrowed down tasks can't be created for task ${this.getId()} as it has a start cursor.`);
-            return null;
+            console.log(`Creating narrowed down tasks for the originating task ${this.options.originatingTaskId}`);
         }
 
         let newTasks:ProjectSearchTask[] = [];
@@ -570,6 +581,7 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery, ProjectSearchTas
                     {
                         id: uuidv4(),
                         parentId: this.getId(),
+                        originatingTaskId: this.options.originatingTaskId,
                         minStars: this.options.minStars,
                         minForks: this.options.minForks,
                         minSizeInKb: this.options.minSizeInKb,

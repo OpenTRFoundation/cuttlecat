@@ -13,7 +13,19 @@ export interface TaskResult<ResultType, TaskSpec> {
 interface Task<ResultType, TaskSpec> {
     getId():string;
 
+    /**
+     * Parent task is the task for a broader scope.
+     * @param id
+     */
     setParentId(id:string):void;
+
+    /**
+     * Originating task is the task that created this task.
+     * It is different than the parent task, as the parent task is the task for a broader scope.
+     * Instead, originating task can be something like the task that processed the previous page.
+     * @param id
+     */
+    setOriginatingTaskId(id:string):void;
 
     createExecutable():(options:TaskOptions) => Promise<TaskResult<ResultType, TaskSpec>>;
 
@@ -76,6 +88,8 @@ export abstract class BaseTask<ResultType, TaskSpec> implements Task<ResultType,
     abstract getId():string;
 
     abstract setParentId(id:string):void;
+
+    abstract setOriginatingTaskId(id:string):void;
 
     abstract execute(signal?:AbortSignal):Promise<ResultType>;
 
@@ -171,6 +185,7 @@ export class TaskQueue<ResultType, TaskSpec> {
                 let nextTask = task.nextTask(taskResult.output);
                 if (nextTask) {
                     console.log(`Found next task ${nextTask.getId()} for task ${task.getId()}, adding to queue.`);
+                    nextTask.setOriginatingTaskId(task.getId());
                     this.add(nextTask);
                 }
             } catch (e) {
