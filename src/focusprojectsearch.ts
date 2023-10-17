@@ -702,6 +702,10 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery, ProjectSearchTas
             return message;
         }
 
+        console.log("Error is not a GraphqlResponseError.");
+        console.log(error);
+        console.log(JSON.stringify(error));
+
         if (error.message) {
             return error.message;
         }
