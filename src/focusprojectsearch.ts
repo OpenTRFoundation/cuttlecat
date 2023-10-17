@@ -607,7 +607,7 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery, ProjectSearchTas
 
         let nodes = output.search.nodes;
 
-        if (nodes == null || nodes.length == 0) {
+        if (!nodes || nodes.length == 0) {
             console.log(`No nodes found for ${this.getId()}.`);
             nodes = [];
         }
@@ -648,15 +648,13 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery, ProjectSearchTas
     }
 
     shouldAbortAfterError(error:any):boolean {
-        if ((<any>error).status) {
-            // need to do these hacks, as the error object is not a GraphqlResponseError, but a HttpError
-            // so, `e instanceof GraphqlResponseError` doesn't work
-            const graphqlError = <GraphqlResponseError<any>>error;
-
+        // `e instanceof GraphqlResponseError` doesn't work
+        // so, need to do this hack
+        if ((<any>error).headers) {
             // first check if this is a secondary rate limit error
             // if so, we should abort the queue
-            if (graphqlError.headers['retry-after']) {
-                console.log(`Secondary rate limit error in task ${this.getId()}. 'retry-after'=${graphqlError.headers['retry-after']}. Aborting the queue.`);
+            if (error.headers['retry-after']) {
+                console.log(`Secondary rate limit error in task ${this.getId()}. 'retry-after'=${error.headers['retry-after']}. Aborting the queue.`);
                 return true;
             }
         }
@@ -664,47 +662,153 @@ class ProjectSearchTask extends BaseTask<RepositorySearchQuery, ProjectSearchTas
     }
 
     getErrorMessage(error:any):string {
-        if ((<any>error).status) {
-            // need to do these hacks, as the error object is not a GraphqlResponseError, but a HttpError
-            // so, `e instanceof GraphqlResponseError` doesn't work
-            const graphqlError = <GraphqlResponseError<any>>error;
+        // request: {
+        //     query: '\n' +
+        //       '    query RepositorySearch($searchString: String!, $first: Int!, $after: String) {\n' +
+        //       '  rateLimit {\n' +
+        //       '    cost\n' +
+        //       '    limit\n' +
+        //       '    nodeCount\n' +
+        //       '    remaining\n' +
+        //       '    resetAt\n' +
+        //       '    used\n' +
+        //       '  }\n' +
+        //       '  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n' +
+        //       '    pageInfo {\n' +
+        //       '      startCursor\n' +
+        //       '      hasNextPage\n' +
+        //       '      endCursor\n' +
+        //       '    }\n' +
+        //       '    repositoryCount\n' +
+        //       '    nodes {\n' +
+        //       '      ...RepositorySummary\n' +
+        //       '    }\n' +
+        //       '  }\n' +
+        //       '}\n' +
+        //       '    \n' +
+        //       '    fragment RepositorySummary on Repository {\n' +
+        //       '  nameWithOwner\n' +
+        //       '  isInOrganization\n' +
+        //       '  owner {\n' +
+        //       '    login\n' +
+        //       '  }\n' +
+        //       '  forkCount\n' +
+        //       '  stargazerCount\n' +
+        //       '  pullRequests {\n' +
+        //       '    totalCount\n' +
+        //       '  }\n' +
+        //       '  issues {\n' +
+        //       '    totalCount\n' +
+        //       '  }\n' +
+        //       '  mentionableUsers {\n' +
+        //       '    totalCount\n' +
+        //       '  }\n' +
+        //       '  watchers {\n' +
+        //       '    totalCount\n' +
+        //       '  }\n' +
+        //       '}\n' +
+        //       '    ',
+        //     variables: {
+        //       searchString: 'is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-07-19 created:2011-11-01..2011-11-06',
+        //       first: 100,
+        //       after: null
+        //     }
+        //   },
+        //   headers: {
+        //     'access-control-allow-origin': '*',
+        //     'access-control-expose-headers': 'ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset',
+        //     'content-encoding': 'gzip',
+        //     'content-security-policy': "default-src 'none'",
+        //     'content-type': 'application/json; charset=utf-8',
+        //     date: 'Tue, 17 Oct 2023 15:25:57 GMT',
+        //     'referrer-policy': 'origin-when-cross-origin, strict-origin-when-cross-origin',
+        //     server: 'GitHub.com',
+        //     'strict-transport-security': 'max-age=31536000; includeSubdomains; preload',
+        //     'transfer-encoding': 'chunked',
+        //     vary: 'Accept-Encoding, Accept, X-Requested-With',
+        //     'x-content-type-options': 'nosniff',
+        //     'x-frame-options': 'deny',
+        //     'x-github-media-type': 'github.v3; format=json',
+        //     'x-github-request-id': '9482:0A32:10DE46F:2241722:652EA781',
+        //     'x-ratelimit-limit': '1000',
+        //     'x-ratelimit-remaining': '844',
+        //     'x-ratelimit-reset': '1697559058',
+        //     'x-ratelimit-resource': 'graphql',
+        //     'x-ratelimit-used': '156',
+        //     'x-xss-protection': '0'
+        //   },
+        //   response: {
+        //     data: { rateLimit: [Object], search: [Object] },
+        //     errors: [ [Object] ]
+        //   },
+        //   errors: [
+        //     {
+        //       type: 'FORBIDDEN',
+        //       path: [Array],
+        //       extensions: [Object],
+        //       locations: [Array],
+        //       message: 'Although you appear to have the correct authorization credentials, the `heroku` organization has an IP allow list enabled, and your IP address is not permitted to access this resource.'
+        //     }
+        //   ],
+        //   data: {
+        //     rateLimit: {
+        //       cost: 1,
+        //       limit: 1000,
+        //       nodeCount: 100,
+        //       remaining: 844,
+        //       resetAt: '2023-10-17T16:10:58Z',
+        //       used: 156
+        //     },
+        //     search: { pageInfo: [Object], repositoryCount: 36, nodes: [Array] }
+        //   }
 
+        // `error instanceof GraphqlResponseError` doesn't work
+        // so, need to do some hacks
+        if ((<any>error).headers) {
             // First check if this is a secondary rate limit error
             // In this case, we should've already aborted earlier.
-            if (graphqlError.headers['retry-after']) {
+            if (error.headers['retry-after']) {
                 throw new Error("Secondary rate limit error. This should have been aborted earlier.");
             }
 
             // throw a new and enriched error with the information from the response
-            let message = `Error in task ${this.getId()}: ${graphqlError.message}.`;
-            if (graphqlError.errors) {
-                graphqlError.errors.forEach((error) => {
-                    message += ` Error: ${error.message}.`;
-                });
-            }
-            if (graphqlError.response && graphqlError.response.errors) {
-                graphqlError.response.errors.forEach((error) => {
-                    message += ` Error: ${error.message}.`;
+            let message = `Error in task ${this.getId()}: ${error.message}.`;
+
+            message += ` Headers: ${JSON.stringify(error.headers)}.`;
+
+            if (error.errors) {
+                error.errors.forEach((e:any) => {
+                    message += ` Error: ${e.message}.`;
                 });
             }
 
-            if (graphqlError.data) {
-                message += ` Data: ${JSON.stringify(graphqlError.data)}.`;
-            }
-            if (graphqlError.response && graphqlError.response.data) {
-                message += ` Data: ${JSON.stringify(graphqlError.response.data)}.`;
+            if (error.data) {
+                message += ` Data: ${JSON.stringify(error.data)}.`;
             }
 
-            if (graphqlError.headers) {
-                message += ` Headers: ${JSON.stringify(graphqlError.headers)}.`;
+            // TODO: temp change to log shit out
+            if(error.data){
+                console.log("There's partial data.")
+                const partialData:RepositorySearchQuery = error.data;
+                console.log("Rate limit: ", JSON.stringify(partialData.rateLimit));
+
+                let nodes = error.data?.search?.nodes;
+
+                if (!nodes || nodes.length == 0) {
+                    console.log(`No nodes found for ${this.getId()}.`);
+                    nodes = [];
+                }
+
+                console.log(`Number of nodes found for ${this.getId()}: ${nodes.length}`);
+
+                for (let i = 0; i < nodes.length; i++) {
+                    const repoSummary = <RepositorySummaryFragment>nodes[i];
+                    console.log(JSON.stringify(repoSummary));
+                }
             }
 
             return message;
         }
-
-        console.log("Error is not a GraphqlResponseError.");
-        console.log(error);
-        console.log(JSON.stringify(error));
 
         if (error.message) {
             return error.message;
