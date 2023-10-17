@@ -8,7 +8,7 @@ async function initializeDynamicImports() {
 async function focusProjectSearch() {
     await initializeDynamicImports();
 
-    await (await import("./focusprojectsearch.js")).main()
+    await (await import("./tasks/focusProjectCandidateSearch/process.js")).main();
 
 }
 
@@ -21,7 +21,7 @@ function buildConfigFromEnvVars() {
 }
 
 async function main() {
-    const startTime  = new Date();
+    const startTime = new Date();
     console.log("Starting application.", new Date());
 
     // To get rid of following warning, which is irrelevant:

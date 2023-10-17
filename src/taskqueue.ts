@@ -1,4 +1,4 @@
-import {PQueue} from "../dynamic-imports";
+import {PQueue} from "./dynamic-imports";
 import {setMaxListeners} from "events";
 
 interface TaskOptions {

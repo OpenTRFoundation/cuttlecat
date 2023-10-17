@@ -1,55 +1,15 @@
 import {graphql} from "@octokit/graphql";
 import {v4 as uuidv4} from 'uuid';
-import {RepositorySearch, RepositorySearchQuery, RepositorySummaryFragment} from "./generated/queries";
+import {RepositorySearchQuery} from "../../generated/queries";
 import {cleanEnv, num, str} from 'envalid'
 import {createWriteStream, readFileSync, writeFileSync} from 'fs'
 
-import {BaseTask, ErroredTask, TaskQueue} from "./tasks/taskqueue";
-import {addDays, daysInPeriod, formatDate, parseDate, splitPeriodIntoHalves, subtractDays} from "./utils";
-import FileSystem from "./fileSystem";
+import {TaskQueue} from "../../taskqueue";
+import {addDays, daysInPeriod, formatDate, parseDate, subtractDays} from "../../utils";
+import FileSystem from "../../fileSystem";
 import {shuffle} from "lodash";
-
-interface QueueConfig {
-    MIN_STARS:number;
-    MIN_FORKS:number;
-    MIN_SIZE_IN_KB:number;
-    MAX_INACTIVITY_DAYS:number;
-    EXCLUDE_PROJECTS_CREATED_BEFORE:string;
-    MIN_AGE_IN_DAYS:number;
-    SEARCH_PERIOD_IN_DAYS:number;
-    PAGE_SIZE:number;
-}
-
-interface ProjectSearchTaskOptions {
-    id:string;
-    parentId:string | null;
-    originatingTaskId:string | null;
-    minStars:number;
-    minForks:number;
-    minSizeInKb:number;
-    hasActivityAfter:string;
-    createdAfter:string;
-    createdBefore:string;
-    pageSize:number;
-    startCursor:string | null;
-}
-
-interface ProcessState {
-    startingConfig:QueueConfig,
-    unresolved:{ [key:string]:ProjectSearchTaskOptions },
-    resolved:{ [key:string]:ProjectSearchTaskOptions },
-    errored:{ [key:string]:ErroredTask<ProjectSearchTaskOptions> },
-    archived:{ [key:string]:ErroredTask<ProjectSearchTaskOptions> },
-    startDate:Date,
-    completionDate:Date | null,
-    completionError:string | null,
-    outputFileName:string,
-}
-
-interface FileOutput {
-    taskId:string;  // to identify which task found this result
-    result:RepositorySummaryFragment,
-}
+import {FileOutput, ProcessState, QueueConfig, TaskOptions} from "./types";
+import {ProjectSearchTask} from "./task";
 
 function buildProcessConfigFromEnvVars() {
     return cleanEnv(process.env, {
@@ -208,7 +168,7 @@ function createNewProcessState(startingConfig:QueueConfig, outputFileName:string
 
     console.log(`Creating a new process state, startDate: ${formatDate(startDate)}, endDate: ${formatDate(endDate)}, hasActivityAfter: ${hasActivityAfter}`);
 
-    let newTasks:ProjectSearchTaskOptions[] = [];
+    let newTasks:TaskOptions[] = [];
 
     for (let i = 0; i < interval.length; i++) {
         let createdAfter = formatDate(interval[i]);
@@ -233,7 +193,7 @@ function createNewProcessState(startingConfig:QueueConfig, outputFileName:string
     // let's shuffle to have a more even distribution of request durations.
     newTasks = shuffle(newTasks);
 
-    let unresolved:{ [key:string]:ProjectSearchTaskOptions } = {};
+    let unresolved:{ [key:string]:TaskOptions } = {};
     for (let i = 0; i < newTasks.length; i++) {
         const task = newTasks[i];
         unresolved[task.id] = task;
@@ -273,7 +233,7 @@ function saveProcessRunOutput(fileSystem:FileSystem, stateFile:string, processSt
     outputStream.end();
 }
 
-function reportTaskQueue(taskQueue:TaskQueue<RepositorySearchQuery, ProjectSearchTaskOptions>, processState:ProcessState) {
+function reportTaskQueue(taskQueue:TaskQueue<RepositorySearchQuery, TaskOptions>, processState:ProcessState) {
     let queueState = taskQueue.getState();
     console.log(`---- Task queue state: ${JSON.stringify(queueState)}`);
     console.log(`---- Task store      : unresolved: ${Object.keys(processState.unresolved).length}, resolved: ${Object.keys(processState.resolved).length}, errored: ${Object.keys(processState.errored).length}, archived: ${Object.keys(processState.archived).length}`);
@@ -373,7 +333,7 @@ export async function main() {
         archived: processState.archived,
     };
 
-    const taskQueue = new TaskQueue<RepositorySearchQuery, ProjectSearchTaskOptions>(
+    const taskQueue = new TaskQueue<RepositorySearchQuery, TaskOptions>(
         taskStore,
         {
             concurrency: processConfig.CONCURRENCY,
@@ -449,276 +409,4 @@ export async function main() {
     // Write to both of the files when queue is aborted too, so we can pick up from where we left off.
     saveProcessRunOutput(fileSystem, stateFile, processState, currentRunOutput);
 
-}
-
-class ProjectSearchTask extends BaseTask<RepositorySearchQuery, ProjectSearchTaskOptions> {
-    private readonly graphqlWithAuth:typeof graphql<RepositorySearchQuery>;
-    private readonly rateLimitStopPercent:number;
-    private readonly currentRunOutput:FileOutput[];
-    private readonly options:ProjectSearchTaskOptions;
-
-
-    constructor(graphqlWithAuth:typeof graphql, rateLimitStopPercent:number, currentRunOutput:FileOutput[], options:ProjectSearchTaskOptions) {
-        super();
-        this.graphqlWithAuth = graphqlWithAuth;
-        this.rateLimitStopPercent = rateLimitStopPercent;
-        this.currentRunOutput = currentRunOutput;
-        this.options = options;
-    }
-
-    getId():string {
-        return this.options.id;
-    }
-
-    setParentId(id:string):void {
-        this.options.parentId = id;
-    }
-
-    setOriginatingTaskId(id:string):void {
-        this.options.originatingTaskId = id;
-    }
-
-    async execute(signal:AbortSignal):Promise<RepositorySearchQuery> {
-        console.log("Executing task: ", this.getId());
-        if (signal.aborted) {
-            // Should never reach here
-            console.log("Task is aborted, throwing exception!");
-            signal.throwIfAborted();
-        }
-
-        const graphqlWithSignal = this.graphqlWithAuth.defaults({
-            // use the same signal for the graphql calls as well (HTTP requests)
-            request: {
-                signal: signal,
-            }
-        });
-
-        try {
-            return await graphqlWithSignal(
-                RepositorySearch.loc!.source.body,
-                this.buildQueryParameters()
-            );
-        } catch (e) {
-            // do not swallow any errors here, as the task queue needs to receive them to re-queue tasks or abort the queue.
-            console.log(`Error while executing task ${this.getId()}: `, (<any>e)?.message);
-            throw e;
-        }
-    }
-
-    private buildQueryParameters() {
-        const searchString =
-            "is:public template:false archived:false " +
-            `stars:>${this.options.minStars} ` +
-            `forks:>${this.options.minForks} ` +
-            `size:>${this.options.minSizeInKb} ` +
-            `pushed:>${this.options.hasActivityAfter} ` +
-            // both ends are inclusive
-            `created:${this.options.createdAfter}..${this.options.createdBefore}`;
-
-        return {
-            "searchString": searchString,
-            "first": this.options.pageSize,
-            "after": this.options.startCursor,
-        };
-    }
-
-    nextTask(output:RepositorySearchQuery):ProjectSearchTask | null {
-        if (output.search.pageInfo.hasNextPage) {
-            console.log(`Next page available for task: ${this.getId()}`);
-            return new ProjectSearchTask(
-                this.graphqlWithAuth,
-                this.rateLimitStopPercent,
-                this.currentRunOutput,
-                {
-                    id: uuidv4(),
-                    parentId: null,
-                    originatingTaskId: this.getId(),
-                    minStars: this.options.minStars,
-                    minForks: this.options.minForks,
-                    minSizeInKb: this.options.minSizeInKb,
-                    hasActivityAfter: this.options.hasActivityAfter,
-                    createdAfter: this.options.createdAfter,
-                    createdBefore: this.options.createdBefore,
-                    pageSize: this.options.pageSize,
-                    startCursor: <string>output.search.pageInfo.endCursor,
-                }
-            );
-        }
-
-        return null;
-    }
-
-    narrowedDownTasks():ProjectSearchTask[] | null {
-        // Project search can't narrow down the scopes of the tasks that start from a cursor.
-        // That's because:
-        // - The cursor is bound to the date range previously used.
-        // In that case, add narrowed down tasks for the originating task. That's the task that caused the creation of
-        // this task with a start cursor.
-        // However, this means, some date ranges will be searched twice and there will be duplicate output.
-        // It is fine though! We can filter the output later.
-        if (this.options.startCursor) {
-            console.log(`Narrowed down tasks can't be created for task ${this.getId()} as it has a start cursor.`);
-            console.log(`Creating narrowed down tasks for the originating task ${this.options.originatingTaskId}`);
-        }
-
-        let newTasks:ProjectSearchTask[] = [];
-        const startDate = parseDate(this.options.createdAfter);
-        const endDate = parseDate(this.options.createdBefore);
-
-        const halfPeriods = splitPeriodIntoHalves(startDate, endDate);
-        if (halfPeriods.length < 1) {
-            console.log(`Narrowed down tasks can't be created for task ${this.getId()}. as it can't be split into half periods.`);
-            return null;
-        }
-
-        for (let i = 0; i < halfPeriods.length; i++) {
-            const halfPeriod = halfPeriods[i];
-            newTasks.push(
-                new ProjectSearchTask(
-                    this.graphqlWithAuth,
-                    this.rateLimitStopPercent,
-                    this.currentRunOutput,
-                    {
-                        id: uuidv4(),
-                        parentId: this.getId(),
-                        originatingTaskId: this.options.originatingTaskId,
-                        minStars: this.options.minStars,
-                        minForks: this.options.minForks,
-                        minSizeInKb: this.options.minSizeInKb,
-                        hasActivityAfter: this.options.hasActivityAfter,
-                        createdAfter: formatDate(halfPeriod.start),
-                        createdBefore: formatDate(halfPeriod.end),
-                        pageSize: this.options.pageSize,
-                        startCursor: null,
-                    }
-                )
-            );
-        }
-
-        return newTasks;
-    }
-
-    getSpec():ProjectSearchTaskOptions {
-        return this.options;
-    }
-
-    saveOutput(output:RepositorySearchQuery):void {
-        console.log(`Saving output of the task: ${this.getId()}`);
-
-        let nodes = output.search.nodes;
-
-        if (!nodes || nodes.length == 0) {
-            console.log(`No nodes found for ${this.getId()}.`);
-            nodes = [];
-        }
-
-        console.log(`Number of nodes found for ${this.getId()}: ${nodes.length}`);
-
-        for (let i = 0; i < nodes.length; i++) {
-            const repoSummary = <RepositorySummaryFragment>nodes[i];
-            // items in the array might be null, in case of partial responses
-            if (repoSummary) {
-                this.currentRunOutput.push({
-                    taskId: this.getId(),
-                    result: repoSummary,
-                });
-            }
-        }
-    }
-
-    shouldAbort(output:RepositorySearchQuery):boolean {
-        const taskId = this.getId();
-
-        console.log(`Rate limit information after task the execution of ${taskId}: ${JSON.stringify(output.rateLimit)}`);
-
-        let remainingCallPermissions = output.rateLimit?.remaining;
-        let callLimit = output.rateLimit?.limit;
-
-        if (remainingCallPermissions == null || callLimit == null) {
-            console.log(`Rate limit information is not available after executing ${taskId}.`);
-            return true;
-        }
-
-        remainingCallPermissions = remainingCallPermissions ? remainingCallPermissions : 0;
-
-        if (callLimit && (remainingCallPermissions < (callLimit * this.rateLimitStopPercent / 100))) {
-            console.log(`Rate limit reached after executing ${taskId}.`);
-            console.log(`Remaining call permissions: ${remainingCallPermissions}, call limit: ${callLimit}, stop percent: ${this.rateLimitStopPercent}`);
-            return true;
-        }
-
-        return false;
-    }
-
-    shouldAbortAfterError(error:any):boolean {
-        // `e instanceof GraphqlResponseError` doesn't work
-        // so, need to do this hack
-        if ((<any>error).headers) {
-            // first check if this is a secondary rate limit error
-            // if so, we should abort the queue
-            if (error.headers['retry-after']) {
-                console.log(`Secondary rate limit error in task ${this.getId()}. 'retry-after'=${error.headers['retry-after']}. Aborting the queue.`);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    getErrorMessage(error:any):string {
-        // `error instanceof GraphqlResponseError` doesn't work
-        // so, need to do some hacks
-        if (error.headers) {
-            // First check if this is a secondary rate limit error
-            // In this case, we should've already aborted earlier.
-            if (error.headers['retry-after']) {
-                throw new Error("Secondary rate limit error. This should have been aborted earlier.");
-            }
-
-            // throw a new and enriched error with the information from the response
-            let message = `Error in task ${this.getId()}: ${error.message}.`;
-
-            message += ` Headers: ${JSON.stringify(error.headers)}.`;
-
-            if (error.errors) {
-                error.errors.forEach((e:any) => {
-                    message += ` Error: ${e.message}.`;
-                });
-            }
-
-            if (error.data) {
-                message += ` Data: ${JSON.stringify(error.data)}.`;
-            }
-
-            return message;
-        }
-
-        if (error.message) {
-            return error.message;
-        }
-        return JSON.stringify(error);
-    }
-
-    shouldRecordAsError(error:any):boolean {
-        // if `headers` are missing, then we don't have an actual response
-        // if data is missing, then we don't have a partial response.
-        // see https://github.com/octokit/graphql.js/blob/9c0643d34f36ed558e55193438d7aa8b031ca43d/README.md#partial-responses
-        return !error.headers || !error.data;
-    }
-
-    extractOutputFromError(error:any):RepositorySearchQuery {
-        if (error.data) {
-            return <RepositorySearchQuery>error.data;
-        }
-        // this should never happen as `shouldRecordAsError` should've returned true in that case already
-        throw new Error("Invalid error object. Can't extract output from error.");
-    }
-
-    getDebugInstructions():string {
-        const instructions = {
-            "query": RepositorySearch.loc!.source.body,
-            "variables": this.buildQueryParameters(),
-        };
-
-        return JSON.stringify(instructions, null, 2);
-    }
 }
