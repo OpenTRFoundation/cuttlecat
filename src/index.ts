@@ -1,5 +1,10 @@
-import {cleanEnv, str} from 'envalid'
+import {bool, cleanEnv, str} from 'envalid'
 import loadDynamicImports from "./dynamic-imports";
+import nock from "nock";
+import {join} from "path";
+import {nowTimestamp} from "./utils";
+
+import {cwd} from 'process';
 
 async function initializeDynamicImports() {
     await loadDynamicImports();
@@ -17,6 +22,10 @@ function buildConfigFromEnvVars() {
         PROCESS: str({
             desc: "Process to run. One of these: [FOCUS_PROJECT_SEARCH]",
         }),
+        RECORD_HTTP_CALLS: bool({
+            desc: "Record HTTP calls to disk for debugging purposes.",
+            default: false,
+        }),
     });
 }
 
@@ -30,12 +39,31 @@ async function main() {
 
     const config = buildConfigFromEnvVars();
 
+    let doNockDone;
+    if (config.RECORD_HTTP_CALLS) {
+        console.log("Recording HTTP calls to disk for debugging purposes.");
+        const nockBack = nock.back;
+
+        let fixturesDirectory = join(cwd(), "nock-records");
+        console.log(`Using fixtures directory: ${fixturesDirectory}`);
+        nockBack.fixtures = fixturesDirectory;
+        nockBack.setMode('record');
+
+        const {nockDone} = await nockBack(`${config.PROCESS}_${nowTimestamp()}.json`);
+        doNockDone = nockDone;
+    }
+
     switch (config.PROCESS) {
         case "FOCUS_PROJECT_SEARCH":
             await focusProjectSearch();
             break;
         default:
             throw new Error(`Unknown process: ${config.PROCESS}`);
+    }
+
+    if (doNockDone) {
+        console.log("Waiting for nock to finish recording HTTP calls to disk.");
+        doNockDone();
     }
 
     console.log("Application finished.", new Date());

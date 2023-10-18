@@ -25,6 +25,13 @@ npm run start
 
 - `FOCUS_PROJECT_SEARCH` - search for projects that match the criteria
 
+### Recording HTTP calls
+
+Set `RECORD_HTTP_CALLS=true` to enable recording of HTTP calls using nock. "Nock back" will be used in `record` mode
+where the new records will be created.
+
+The calls will be stored in the `./nock-records/${PROCESS}_${timestamp}` directory.
+
 ### Process `FOCUS_PROJECT_SEARCH`
 
 Supports the following environment variables:
@@ -59,16 +66,32 @@ The options marked as `No` in the `Persisted` column will always be used from th
 
 The output will be written to the `./data/focus-project-search` directory.
 
-To start the process with defaults:
+To start the process with defaults but with a short search date range:
 
 ```shell
 # store the results in a temporary directory
+rm -rf /tmp/foo/bar
 mkdir -p /tmp/foo/bar
 
 GITHUB_TOKEN="$(gh auth token)" \
 DATA_DIRECTORY="/tmp/foo/bar" \
 PROCESS="FOCUS_PROJECT_SEARCH" \
 MIN_AGE_IN_DAYS=5700 \
+npm run start
+```
+
+To start the process with recording:
+
+```shell
+# store the results in a temporary directory
+rm -rf /tmp/foo/bar
+mkdir -p /tmp/foo/bar
+
+GITHUB_TOKEN="$(gh auth token)" \
+DATA_DIRECTORY="/tmp/foo/bar" \
+PROCESS="FOCUS_PROJECT_SEARCH" \
+MIN_AGE_IN_DAYS=5750 \
+RECORD_HTTP_CALLS=true \
 npm run start
 ```
 

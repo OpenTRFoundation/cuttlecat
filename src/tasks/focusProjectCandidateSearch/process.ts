@@ -1,7 +1,7 @@
 import {graphql} from "@octokit/graphql";
 import {v4 as uuidv4} from 'uuid';
 import {RepositorySearchQuery} from "../../generated/queries";
-import {cleanEnv, num, str} from 'envalid'
+import {bool, cleanEnv, num, str} from 'envalid'
 import {createWriteStream, readFileSync, writeFileSync} from 'fs'
 
 import {TaskQueue} from "../../taskqueue";
@@ -10,6 +10,7 @@ import FileSystem from "../../fileSystem";
 import {shuffle} from "lodash";
 import {FileOutput, ProcessState, QueueConfig, TaskOptions} from "./types";
 import {ProjectSearchTask} from "./task";
+import fetch from "node-fetch";
 
 export class Process {
     private readonly processState:ProcessState;
@@ -80,6 +81,10 @@ function buildProcessConfigFromEnvVars() {
     return cleanEnv(process.env, {
         GITHUB_TOKEN: str({
             desc: "(not persisted in process file) GitHub API token. Token doesn't need any permissions."
+        }),
+        RECORD_HTTP_CALLS: bool({
+            desc: "Record HTTP calls to disk for debugging purposes.",
+            default: false,
         }),
         DATA_DIRECTORY: str({
             desc: "(not persisted in process file) Data directory to read and store the output."
@@ -389,11 +394,23 @@ export async function main() {
             retryCount: processConfig.RETRY_COUNT,
         });
 
-    const graphqlWithAuth = graphql.defaults({
+    let graphqlWithAuth = graphql.defaults({
         headers: {
             Authorization: `bearer ${processConfig.GITHUB_TOKEN}`,
         },
+        request: {
+            fetch: fetch,
+        }
     });
+
+    if(processConfig.RECORD_HTTP_CALLS) {
+        graphqlWithAuth = graphqlWithAuth.defaults({
+            headers: {
+                // nock doesn't really support gzip, so we need to disable it
+                "accept-encoding": 'identity'
+            }
+        });
+    }
 
     const process = new Process(
         processState, taskQueue, graphqlWithAuth, currentRunOutput, {
