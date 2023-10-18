@@ -64,7 +64,7 @@ export interface ErroredTask<TaskSpec> {
     readonly debug:string;
 }
 
-interface TaskStore<TaskSpec> {
+export interface TaskStore<TaskSpec> {
     unresolved:{ [key:string]:TaskSpec },
     resolved:{ [key:string]:TaskSpec },
     errored:{ [key:string]:ErroredTask<TaskSpec> },

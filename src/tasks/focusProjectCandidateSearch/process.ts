@@ -11,6 +11,71 @@ import {shuffle} from "lodash";
 import {FileOutput, ProcessState, QueueConfig, TaskOptions} from "./types";
 import {ProjectSearchTask} from "./task";
 
+export class Process {
+    private readonly processState:ProcessState;
+    private readonly taskQueue:TaskQueue<RepositorySearchQuery, TaskOptions>;
+    private readonly graphqlFn:typeof graphql;
+    private readonly currentRunOutput:FileOutput[];
+    private readonly options:{
+        retryCount:number,
+        rateLimitStopPercent:number,
+    };
+
+    constructor(processState:ProcessState, taskQueue:TaskQueue<RepositorySearchQuery, TaskOptions>, graphqlFn:typeof graphql, currentRunOutput:FileOutput[], options:{
+        retryCount:number;
+        rateLimitStopPercent:number
+    }) {
+        this.processState = processState;
+        this.taskQueue = taskQueue;
+        this.graphqlFn = graphqlFn;
+        this.currentRunOutput = currentRunOutput;
+        this.options = options;
+    }
+
+    initialize() {
+        // Queue already retries any errored items, until they fail for RETRY_COUNT times.
+        // Afterward, queue will only keep the errored items in the errored list, and remove them from the unresolved list.
+        // So, we don't actually need to check the errored list here.
+        // However, when the RETRY_COUNT is increased, we should retry the errored tasks from the previous run.
+        console.log("Checking if the errored tasks should be retried, according to RETRY_COUNT.")
+        for (let key in this.processState.errored) {
+            let erroredTask = this.processState.errored[key];
+            if (this.processState.unresolved[erroredTask.task.id]) {
+                // errored task is already in the unresolved list, and it will be retried by the queue.
+                continue;
+            }
+
+            if (erroredTask.errors.length < this.options.retryCount + 1) {    // +1 since retry count is not the same as the number of errors
+                console.log(`Going to retry errored task: ${erroredTask.task.id} as it has ${erroredTask.errors.length} errors, and RETRY_COUNT is ${this.options.retryCount}`);
+                this.processState.unresolved[erroredTask.task.id] = erroredTask.task;
+                // keep in unresolved though, as it will be retried by the task queue
+            }
+        }
+
+        for (let key in this.processState.unresolved) {
+            const task = new ProjectSearchTask(this.graphqlFn, this.options.rateLimitStopPercent, this.currentRunOutput, this.processState.unresolved[key]);
+            console.log(`Adding task to queue: ${task.getId()}`);
+            // DO NOT await here, as it will block the loop
+            // fire and forget.
+            // the task will be added to the queue, and the queue will start executing it.
+            // noinspection ES6MissingAwait
+            this.taskQueue.add(task);
+        }
+    }
+
+    async start() {
+        console.log("Starting the task queue");
+        this.taskQueue.start();
+        try {
+            await this.taskQueue.finish();
+        } catch (e) {
+            console.log("Error while finishing the task queue", e);
+            console.log(e);
+        }
+        console.log("Task queue finished");
+    }
+}
+
 function buildProcessConfigFromEnvVars() {
     return cleanEnv(process.env, {
         GITHUB_TOKEN: str({
@@ -307,25 +372,6 @@ export async function main() {
     console.log(`Number of resolved tasks: ${Object.keys(processState.resolved).length}`);
     console.log(`Number of errored tasks: ${Object.keys(processState.errored).length}`);
 
-    // Queue already retries any errored items, until they fail for RETRY_COUNT times.
-    // Afterward, queue will only keep the errored items in the errored list, and remove them from the unresolved list.
-    // So, we don't actually need to check the errored list here.
-    // However, when the RETRY_COUNT is increased, we should retry the errored tasks from the previous run.
-    console.log("Checking if the errored tasks should be retried, according to RETRY_COUNT.")
-    for (let key in processState.errored) {
-        let erroredTask = processState.errored[key];
-        if (processState.unresolved[erroredTask.task.id]) {
-            // errored task is already in the unresolved list, and it will be retried by the queue.
-            continue;
-        }
-
-        if (erroredTask.errors.length < processConfig.RETRY_COUNT + 1) {    // +1 since retry count is not the same as the number of errors
-            console.log(`Going to retry errored task: ${erroredTask.task.id} as it has ${erroredTask.errors.length} errors, and RETRY_COUNT is ${processConfig.RETRY_COUNT}`);
-            processState.unresolved[erroredTask.task.id] = erroredTask.task;
-            // keep in unresolved though, as it will be retried by the task queue
-        }
-    }
-
     const taskStore = {
         unresolved: processState.unresolved,
         resolved: processState.resolved,
@@ -349,15 +395,14 @@ export async function main() {
         },
     });
 
-    for (let key in processState.unresolved) {
-        const task = new ProjectSearchTask(graphqlWithAuth, processConfig.RATE_LIMIT_STOP_PERCENT, currentRunOutput, processState.unresolved[key]);
-        console.log(`Adding task to queue: ${task.getId()}`);
-        // DO NOT await here, as it will block the loop
-        // fire and forget.
-        // the task will be added to the queue, and the queue will start executing it.
-        // noinspection ES6MissingAwait
-        taskQueue.add(task);
-    }
+    const process = new Process(
+        processState, taskQueue, graphqlWithAuth, currentRunOutput, {
+            retryCount: processConfig.RETRY_COUNT,
+            rateLimitStopPercent: processConfig.RATE_LIMIT_STOP_PERCENT,
+        }
+    );
+
+    process.initialize();
 
     // Print the queue state periodically
     // noinspection ES6MissingAwait
@@ -379,15 +424,7 @@ export async function main() {
         }
     })();
 
-    console.log("Starting the task queue");
-    taskQueue.start();
-    try {
-        await taskQueue.finish();
-    } catch (e) {
-        console.log("Error while finishing the task queue", e);
-        console.log(e);
-    }
-    console.log("Task queue finished");
+    await process.start();
 
     if (Object.keys(processState.unresolved).length === 0) {
         // no unresolved tasks, so the queue is completed.
