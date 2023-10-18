@@ -124,3 +124,13 @@ npm run test
   --use-gitignore=true \
   --remote-name=origin
 ```
+
+### Test HTTP call recording
+
+```shell
+  act --job=record-sample-http-calls-focus-project \
+  -s GITHUB_TOKEN="$(gh auth token)" \
+  --reuse=true \
+  --use-gitignore=true \
+  --remote-name=origin
+```

@@ -1,0 +1,62 @@
+name: Record Sample HTTP Calls
+
+permissions:
+  contents: write
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  # workflow related
+  RECORD_HTTP_CALLS: true
+  # cuttlecat related
+  PROCESS: FOCUS_PROJECT_SEARCH
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  DATA_DIRECTORY: ${{ github.workspace }}
+
+
+jobs:
+  record-sample-http-calls-focus-project:
+    name: Run focus project search with HTTP call recording
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Print environment
+        run: |
+          node --version
+          npm --version
+          echo "GITHUB_WORKSPACE: ${{ github.workspace }}"
+          echo "DATA_DIRECTORY: ${{ env.DATA_DIRECTORY }}"
+
+      - name: Install dependencies
+        run: |
+          npm ci
+
+      - name: Start process
+        run: |
+          echo "Printing cuttlecat version:"
+          cat package.json | jq '.version'
+          
+          echo "Running on branch ${{ github.ref }}"
+          echo "Running on commit ${{ github.sha }}"
+          
+          echo "Starting process"
+          npm run start
+
+      - name: Print output
+        run: |
+          ls nock-records
+          cat nock-records/*.json
+          
+
+  
+
