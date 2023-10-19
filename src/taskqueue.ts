@@ -1,5 +1,8 @@
 import {PQueue} from "./dynamic-imports";
 import {setMaxListeners} from "events";
+import {createLogger} from "./log";
+
+const logger = createLogger("taskqueue");
 
 interface TaskOptions {
     readonly signal?:AbortSignal;
@@ -83,7 +86,7 @@ export abstract class BaseTask<ResultType, TaskSpec> implements Task<ResultType,
                     };
                 }).catch((e) => {
                     // log and escalate the error
-                    console.log(`Task ${this.getId()} errored: `, e.message);
+                    logger.debug(`Task ${this.getId()} errored: ${e.message}`);
                     throw e;
                 });
         };
@@ -165,22 +168,22 @@ export class TaskQueue<ResultType, TaskSpec> {
 
             try {
                 if (this.abortController.signal.aborted) {
-                    console.log(`Task queue is aborted, hence not adding new task ${task.getId()} to the backing queue.`);
+                    logger.debug(`Task queue is aborted, hence not adding new task ${task.getId()} to the backing queue.`);
                     return;
                 }
                 let taskResult = await this.backingQueue.add(task.createExecutable(), {signal: this.abortController.signal});
-                console.log(`Task ${task.getId()} done`);
+                logger.debug(`Task ${task.getId()} done`);
                 output = taskResult.output;
             } catch (e) {
                 // in case of an abort, we don't want to add the task to the errored list
                 if (e instanceof Error && e.constructor.name === 'AbortError') {
-                    console.log("Task aborted: ", task.getId());
+                    logger.debug(`Task aborted: ${task.getId()}`);
                     return;
                 }
 
                 // before marking the task as aborted, let's ask the task if it wants to abort
                 if (task.shouldAbortAfterError(e)) {
-                    console.log("Task identified that processing should stop after error, aborting queue. Task id: ", task.getId());
+                    logger.debug(`Task identified that processing should stop after error, aborting queue. Task id: ${task.getId()}`);
                     this.abortController.abort();
                     this.backingQueue.clear();
                     return;
@@ -194,7 +197,7 @@ export class TaskQueue<ResultType, TaskSpec> {
                     // let's ask the task for an error message, so that we can store it along with the task
                     const errorMessage = task.getErrorMessage(e);
 
-                    console.log("Task errored: ", task.getId(), errorMessage);
+                    logger.debug(`Task ${task.getId()} errored: ${errorMessage}`);
                     if (!this.taskStore.errored[task.getId()]) {
                         this.taskStore.errored[task.getId()] = {
                             task: task.getSpec(),
@@ -210,7 +213,7 @@ export class TaskQueue<ResultType, TaskSpec> {
 
                     const taskErrorCount = this.taskStore.errored[task.getId()].errors.length;
                     if (taskErrorCount < this.retryCount + 1) {
-                        console.log(`Task ${task.getId()} errored, retrying. Error count: ${taskErrorCount}, max retry count: ${this.retryCount}`);
+                        logger.debug(`Task ${task.getId()} errored, retrying. Error count: ${taskErrorCount}, max retry count: ${this.retryCount}`);
                         this.add(task);
                     } else {
                         // Before giving up on tasks that errored N times, ask them to create narrowed done subtasks.
@@ -224,12 +227,12 @@ export class TaskQueue<ResultType, TaskSpec> {
                         // The original task should be archived in that case.
                         // The new tasks need to have a relation to the archived original task for traceability.
 
-                        console.log(`Task ${task.getId()} errored for ${taskErrorCount} times which is more than the retry count: ${this.retryCount}.`);
-                        console.log("Going to check if it can create narrowed down tasks.");
+                        logger.debug(`Task ${task.getId()} errored for ${taskErrorCount} times which is more than the retry count: ${this.retryCount}.`);
+                        logger.debug("Going to check if it can create narrowed down tasks.");
 
                         const narrowedDownTasks = task.narrowedDownTasks();
                         if (narrowedDownTasks && narrowedDownTasks.length > 0) {
-                            console.log(`Task ${task.getId()} returned ${narrowedDownTasks.length} narrowed down tasks, adding them to the queue and archiving the original task.`);
+                            logger.debug(`Task ${task.getId()} returned ${narrowedDownTasks.length} narrowed down tasks, adding them to the queue and archiving the original task.`);
                             for (let narrowedDownTask of narrowedDownTasks) {
                                 narrowedDownTask.setParentId(task.getId());
                                 this.add(narrowedDownTask);
@@ -239,11 +242,11 @@ export class TaskQueue<ResultType, TaskSpec> {
                             this.taskStore.archived[task.getId()] = this.taskStore.errored[task.getId()];
                             delete this.taskStore.errored[task.getId()];
                         } else {
-                            console.log(`Task ${task.getId()} did not return any narrowed down tasks, keeping it in the errored list.`);
+                            logger.debug(`Task ${task.getId()} did not return any narrowed down tasks, keeping it in the errored list.`);
                         }
                     }
                 } else {
-                    console.log("Task errored, but it is not a real error, continuing. Task id: ", task.getId());
+                    logger.debug("Task errored, but it is not a real error, continuing. Task id: ", task.getId());
                     output = task.extractOutputFromError(e);
                 }
             }
@@ -268,7 +271,7 @@ export class TaskQueue<ResultType, TaskSpec> {
                 // if the task identifies that there's an issue and the processing should stop (like rate limits),
                 // we should abort the queue
                 if (task.shouldAbort(output)) {
-                    console.log(`Task ${task.getId()} identified that processing should stop, aborting queue.`);
+                    logger.debug(`Task ${task.getId()} identified that processing should stop, aborting queue.`);
                     this.abortController.abort();
                     this.backingQueue.clear();
                     return;
@@ -276,7 +279,7 @@ export class TaskQueue<ResultType, TaskSpec> {
 
                 let nextTask = task.nextTask(output);
                 if (nextTask) {
-                    console.log(`Found next task ${nextTask.getId()} for task ${task.getId()}, adding to queue.`);
+                    logger.debug(`Found next task ${nextTask.getId()} for task ${task.getId()}, adding to queue.`);
                     nextTask.setOriginatingTaskId(task.getId());
                     this.add(nextTask);
                 }
@@ -294,7 +297,7 @@ export class TaskQueue<ResultType, TaskSpec> {
         // the new item is added and we will return. Thus, we need to check if the store's unresolved list is empty.
         while (true) {
             await this.backingQueue.onIdle();
-            console.log("Task queue is idle, checking if there are any unresolved tasks.");
+            logger.debug("Task queue is idle, checking if there are any unresolved tasks.");
             if (Object.keys(this.taskStore.unresolved).length === 0) {
                 break;
             }

@@ -1,9 +1,16 @@
 import {graphql} from "@octokit/graphql";
 import {v4 as uuidv4} from "uuid";
 import {BaseTask} from "../../taskqueue";
-import {FocusProjectCandidateSearch, FocusProjectCandidateSearchQuery, RepositorySummaryFragment} from "../../generated/queries";
+import {
+    FocusProjectCandidateSearch,
+    FocusProjectCandidateSearchQuery,
+    RepositorySummaryFragment
+} from "../../generated/queries";
 import {FileOutput, TaskOptions} from "./types";
 import {formatDate, parseDate, splitPeriodIntoHalves} from "../../utils";
+import {createLogger} from "../../log";
+
+const logger = createLogger("focusProjectCandidateSearch/task");
 
 export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions> {
     private readonly graphqlWithAuth:typeof graphql<FocusProjectCandidateSearchQuery>;
@@ -33,10 +40,10 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
     }
 
     async execute(signal:AbortSignal):Promise<FocusProjectCandidateSearchQuery> {
-        console.log("Executing task: ", this.getId());
+        logger.debug(`Executing task: ${this.getId()}`);
         if (signal.aborted) {
             // Should never reach here
-            console.log("Task is aborted, throwing exception!");
+            logger.error("Task is aborted, throwing exception!");
             signal.throwIfAborted();
         }
 
@@ -54,7 +61,7 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
             );
         } catch (e) {
             // do not swallow any errors here, as the task queue needs to receive them to re-queue tasks or abort the queue.
-            console.log(`Error while executing task ${this.getId()}: `, (<any>e)?.message);
+            logger.info(`Error while executing task ${this.getId()}: ${(<any>e)?.message}`);
             throw e;
         }
     }
@@ -78,7 +85,7 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
 
     nextTask(output:FocusProjectCandidateSearchQuery):Task | null {
         if (output.search.pageInfo.hasNextPage) {
-            console.log(`Next page available for task: ${this.getId()}`);
+            logger.debug(`Next page available for task: ${this.getId()}`);
             return new Task(
                 this.graphqlWithAuth,
                 this.rateLimitStopPercent,
@@ -111,8 +118,8 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
         // However, this means, some date ranges will be searched twice and there will be duplicate output.
         // It is fine though! We can filter the output later.
         if (this.options.startCursor) {
-            console.log(`Narrowed down tasks can't be created for task ${this.getId()} as it has a start cursor.`);
-            console.log(`Creating narrowed down tasks for the originating task ${this.options.originatingTaskId}`);
+            logger.debug(`Narrowed down tasks can't be created for task ${this.getId()} as it has a start cursor.`);
+            logger.debug(`Creating narrowed down tasks for the originating task ${this.options.originatingTaskId}`);
         }
 
         let newTasks:Task[] = [];
@@ -121,7 +128,7 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
 
         const halfPeriods = splitPeriodIntoHalves(startDate, endDate);
         if (halfPeriods.length < 1) {
-            console.log(`Narrowed down tasks can't be created for task ${this.getId()}. as it can't be split into half periods.`);
+            logger.debug(`Narrowed down tasks can't be created for task ${this.getId()}. as it can't be split into half periods.`);
             return null;
         }
 
@@ -157,16 +164,16 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
     }
 
     saveOutput(output:FocusProjectCandidateSearchQuery):void {
-        console.log(`Saving output of the task: ${this.getId()}`);
+        logger.debug(`Saving output of the task: ${this.getId()}`);
 
         let nodes = output.search.nodes;
 
         if (!nodes || nodes.length == 0) {
-            console.log(`No nodes found for ${this.getId()}.`);
+            logger.debug(`No nodes found for ${this.getId()}.`);
             nodes = [];
         }
 
-        console.log(`Number of nodes found for ${this.getId()}: ${nodes.length}`);
+        logger.debug(`Number of nodes found for ${this.getId()}: ${nodes.length}`);
 
         for (let i = 0; i < nodes.length; i++) {
             const repoSummary = <RepositorySummaryFragment>nodes[i];
@@ -183,21 +190,21 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
     shouldAbort(output:FocusProjectCandidateSearchQuery):boolean {
         const taskId = this.getId();
 
-        console.log(`Rate limit information after task the execution of ${taskId}: ${JSON.stringify(output.rateLimit)}`);
+        logger.debug(`Rate limit information after task the execution of ${taskId}: ${JSON.stringify(output.rateLimit)}`);
 
         let remainingCallPermissions = output.rateLimit?.remaining;
         let callLimit = output.rateLimit?.limit;
 
         if (remainingCallPermissions == null || callLimit == null) {
-            console.log(`Rate limit information is not available after executing ${taskId}.`);
+            logger.warn(`Rate limit information is not available after executing ${taskId}.`);
             return true;
         }
 
         remainingCallPermissions = remainingCallPermissions ? remainingCallPermissions : 0;
 
         if (callLimit && (remainingCallPermissions < (callLimit * this.rateLimitStopPercent / 100))) {
-            console.log(`Rate limit reached after executing ${taskId}.`);
-            console.log(`Remaining call permissions: ${remainingCallPermissions}, call limit: ${callLimit}, stop percent: ${this.rateLimitStopPercent}`);
+            logger.warn(`Rate limit reached after executing ${taskId}.`);
+            logger.warn(`Remaining call permissions: ${remainingCallPermissions}, call limit: ${callLimit}, stop percent: ${this.rateLimitStopPercent}`);
             return true;
         }
 
@@ -211,7 +218,7 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
             // first check if this is a secondary rate limit error
             // if so, we should abort the queue
             if (error.headers['retry-after']) {
-                console.log(`Secondary rate limit error in task ${this.getId()}. 'retry-after'=${error.headers['retry-after']}. Aborting the queue.`);
+                logger.warn(`Secondary rate limit error in task ${this.getId()}. 'retry-after'=${error.headers['retry-after']}. Aborting the queue.`);
                 return true;
             }
         }

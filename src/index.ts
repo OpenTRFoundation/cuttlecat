@@ -3,6 +3,7 @@ import loadDynamicImports from "./dynamic-imports";
 import nock from "nock";
 import {join} from "path";
 import {nowTimestamp} from "./utils";
+import * as log from "./log";
 
 import {cwd} from 'process';
 
@@ -14,7 +15,6 @@ async function focusProjectCandidateSearch() {
     await initializeDynamicImports();
 
     await (await import("./tasks/focusProjectCandidateSearch/process.js")).main();
-
 }
 
 function buildConfigFromEnvVars() {
@@ -26,26 +26,39 @@ function buildConfigFromEnvVars() {
             desc: "Record HTTP calls to disk for debugging purposes.",
             default: false,
         }),
+        ENABLE_DEBUG_LOGGING: bool({
+            desc: "Enable debug logging.",
+            default: false,
+        }),
     });
 }
 
 async function main() {
+    const config = buildConfigFromEnvVars();
+    if (config.ENABLE_DEBUG_LOGGING) {
+        console.log("Setting log level to debug");
+        log.setLevel("debug");
+    } else {
+        console.log("Setting log level to info");
+        log.setLevel("info");
+    }
+
+    let logger = log.createLogger("index");
+
     const startTime = new Date();
-    console.log("Starting application.", new Date());
+    logger.info("Starting application. " + new Date().toString());
 
     // To get rid of following warning, which is irrelevant:
     // (node:46005) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. Use events.setMaxListeners() to increase limit
     process.setMaxListeners(0);
 
-    const config = buildConfigFromEnvVars();
-
     let doNockDone;
     if (config.RECORD_HTTP_CALLS) {
-        console.log("Recording HTTP calls to disk for debugging purposes.");
+        logger.info("Recording HTTP calls to disk for debugging purposes.");
         const nockBack = nock.back;
 
         let fixturesDirectory = join(cwd(), "nock-records");
-        console.log(`Using fixtures directory: ${fixturesDirectory}`);
+        logger.info(`Using fixtures directory: ${fixturesDirectory}`);
         nockBack.fixtures = fixturesDirectory;
         nockBack.setMode('record');
 
@@ -62,12 +75,12 @@ async function main() {
     }
 
     if (doNockDone) {
-        console.log("Waiting for nock to finish recording HTTP calls to disk.");
+        logger.info("Waiting for nock to finish recording HTTP calls to disk.");
         doNockDone();
     }
 
-    console.log("Application finished.", new Date());
-    console.log("Application took", (new Date().getTime() - startTime.getTime()) / 1000, "seconds");
+    logger.info("Application finished. " + new Date().toString());
+    logger.info(`Application took ${(new Date().getTime() - startTime.getTime()) / 1000} seconds`);
 }
 
 (async () => {

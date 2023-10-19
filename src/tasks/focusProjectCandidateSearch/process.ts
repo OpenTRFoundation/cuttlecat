@@ -11,6 +11,9 @@ import {shuffle} from "lodash";
 import {FileOutput, ProcessState, QueueConfig, TaskOptions} from "./types";
 import {Task} from "./task";
 import fetch from "node-fetch";
+import {createLogger} from "../../log";
+
+const logger = createLogger("focusProjectCandidateSearch/process");
 
 export class Process {
     private readonly processState:ProcessState;
@@ -38,7 +41,7 @@ export class Process {
         // Afterward, queue will only keep the errored items in the errored list, and remove them from the unresolved list.
         // So, we don't actually need to check the errored list here.
         // However, when the RETRY_COUNT is increased, we should retry the errored tasks from the previous run.
-        console.log("Checking if the errored tasks should be retried, according to RETRY_COUNT.")
+        logger.info("Checking if the errored tasks should be retried, according to RETRY_COUNT.")
         for (let key in this.processState.errored) {
             let erroredTask = this.processState.errored[key];
             if (this.processState.unresolved[erroredTask.task.id]) {
@@ -47,7 +50,7 @@ export class Process {
             }
 
             if (erroredTask.errors.length < this.options.retryCount + 1) {    // +1 since retry count is not the same as the number of errors
-                console.log(`Going to retry errored task: ${erroredTask.task.id} as it has ${erroredTask.errors.length} errors, and RETRY_COUNT is ${this.options.retryCount}`);
+                logger.debug(`Going to retry errored task: ${erroredTask.task.id} as it has ${erroredTask.errors.length} errors, and RETRY_COUNT is ${this.options.retryCount}`);
                 this.processState.unresolved[erroredTask.task.id] = erroredTask.task;
                 // keep in unresolved though, as it will be retried by the task queue
             }
@@ -55,7 +58,7 @@ export class Process {
 
         for (let key in this.processState.unresolved) {
             const task = new Task(this.graphqlFn, this.options.rateLimitStopPercent, this.currentRunOutput, this.processState.unresolved[key]);
-            console.log(`Adding task to queue: ${task.getId()}`);
+            logger.debug(`Adding task to queue: ${task.getId()}`);
             // DO NOT await here, as it will block the loop
             // fire and forget.
             // the task will be added to the queue, and the queue will start executing it.
@@ -65,15 +68,15 @@ export class Process {
     }
 
     async start() {
-        console.log("Starting the task queue");
+        logger.info("Starting the task queue");
         this.taskQueue.start();
         try {
             await this.taskQueue.finish();
         } catch (e) {
-            console.log("Error while finishing the task queue", e);
-            console.log(e);
+            logger.error(`Error while finishing the task queue: ${e}`);
+            logger.error(e);
         }
-        console.log("Task queue finished");
+        logger.info("Task queue finished");
     }
 }
 
@@ -236,7 +239,7 @@ export function createNewProcessState(startingConfig:QueueConfig, outputFileName
     let interval = daysInPeriod(startDate, endDate, startingConfig.SEARCH_PERIOD_IN_DAYS);
     let hasActivityAfter = formatDate(subtractDays(nowFn(), startingConfig.MAX_INACTIVITY_DAYS))
 
-    console.log(`Creating a new process state, startDate: ${formatDate(startDate)}, endDate: ${formatDate(endDate)}, hasActivityAfter: ${hasActivityAfter}`);
+    logger.info(`Creating a new process state, startDate: ${formatDate(startDate)}, endDate: ${formatDate(endDate)}, hasActivityAfter: ${hasActivityAfter}`);
 
     let newTasks:TaskOptions[] = [];
 
@@ -267,7 +270,7 @@ export function createNewProcessState(startingConfig:QueueConfig, outputFileName
     for (let i = 0; i < newTasks.length; i++) {
         const task = newTasks[i];
         unresolved[task.id] = task;
-        console.log(`Created unresolved task: ${JSON.stringify(task)}`);
+        logger.debug(`Created unresolved task: ${JSON.stringify(task)}`);
     }
 
     return {
@@ -284,11 +287,11 @@ export function createNewProcessState(startingConfig:QueueConfig, outputFileName
 }
 
 function saveProcessRunOutput(fileSystem:FileSystem, stateFile:string, processState:ProcessState, currentRunOutput:FileOutput[]) {
-    console.log(`Writing process state to file ${stateFile}`);
+    logger.info(`Writing process state to file ${stateFile}`);
     writeFileSync(stateFile, JSON.stringify(processState, null, 2));
 
     const outputFileFullPath = fileSystem.getOutputFilePath(processState.outputFileName);
-    console.log(`Writing output to file: ${outputFileFullPath}`);
+    logger.info(`Writing output to file: ${outputFileFullPath}`);
     const outputStream = createWriteStream(outputFileFullPath, {flags: 'a'});
 
     // we don't write as an array. just add new items as new json objects
@@ -305,13 +308,13 @@ function saveProcessRunOutput(fileSystem:FileSystem, stateFile:string, processSt
 
 function reportTaskQueue(taskQueue:TaskQueue<FocusProjectCandidateSearchQuery, TaskOptions>, processState:ProcessState) {
     let queueState = taskQueue.getState();
-    console.log(`---- Task queue state: ${JSON.stringify(queueState)}`);
-    console.log(`---- Task store      : unresolved: ${Object.keys(processState.unresolved).length}, resolved: ${Object.keys(processState.resolved).length}, errored: ${Object.keys(processState.errored).length}, archived: ${Object.keys(processState.archived).length}`);
+    logger.info(`---- Task queue state: ${JSON.stringify(queueState)}`);
+    logger.info(`---- Task store      : unresolved: ${Object.keys(processState.unresolved).length}, resolved: ${Object.keys(processState.resolved).length}, errored: ${Object.keys(processState.errored).length}, archived: ${Object.keys(processState.archived).length}`);
     return queueState;
 }
 
 export async function main() {
-    console.log("Starting focus project search");
+    logger.info("Starting focus project search");
     const processConfig = buildProcessConfigFromEnvVars();
     const newQueueConfig = buildNewQueueConfigFromEnvVars();
     // store the output of current run as an array of objects
@@ -326,7 +329,7 @@ export async function main() {
         ".json",
     );
 
-    console.log(`Read process config:`, JSON.stringify(processConfig, (key, value) => {
+    logger.info(`Read process config:` + JSON.stringify(processConfig, (key, value) => {
         if (key == "GITHUB_TOKEN") {
             // print only the first 3 characters of the token, if it's available
             if (value && value.length > 3) {
@@ -337,45 +340,45 @@ export async function main() {
         return value;
     }));
 
-    console.log(`Read new queue config: ${JSON.stringify(newQueueConfig)}`);
+    logger.info(`Read new queue config: ${JSON.stringify(newQueueConfig)}`);
 
     let processState:ProcessState;
 
     let stateFile = fileSystem.getLatestProcessStateFile();
     if (stateFile == null) {
         stateFile = fileSystem.getPathOfNewProcessStateFile();
-        console.log(`There are no process state files, starting a new process. Path of state file will be: ${stateFile}`);
+        logger.info(`There are no process state files, starting a new process. Path of state file will be: ${stateFile}`);
         processState = createNewProcessState(newQueueConfig, fileSystem.getNewProcessOutputFileName(), getNow);
     } else {
-        console.log(`Found latest process state file: ${stateFile}`)
+        logger.info(`Found latest process state file: ${stateFile}`)
         processState = JSON.parse(readFileSync(stateFile, "utf8"));
     }
 
-    console.log(`Latest process state: ${JSON.stringify(processState)}`);
+    logger.debug(`Latest process state: ${JSON.stringify(processState)}`);
 
     if (processState.completionDate) {
         // convert to date
         processState.completionDate = new Date(processState.completionDate);
 
-        console.log("Previous queue is completed.");
+        logger.info("Previous queue is completed.");
         // start a new one, but only if RENEW_PERIOD_IN_DAYS has passed
         const now = getNow();
         const daysSinceCompletion = (now.getTime() - processState.completionDate.getTime()) / (1000 * 60 * 60 * 24);
         if (daysSinceCompletion < processConfig.RENEW_PERIOD_IN_DAYS) {
-            console.log(`Previous process is completed, but RENEW_PERIOD_IN_DAYS of ${processConfig.RENEW_PERIOD_IN_DAYS} hasn't passed yet. It has been ${daysSinceCompletion} days. Exiting.`);
+            logger.info(`Previous process is completed, but RENEW_PERIOD_IN_DAYS of ${processConfig.RENEW_PERIOD_IN_DAYS} hasn't passed yet. It has been ${daysSinceCompletion} days. Exiting.`);
             return;
         }
-        console.log("Previous queue is completed, and RENEW_PERIOD_IN_DAYS has passed. Starting a new queue.");
+        logger.info("Previous queue is completed, and RENEW_PERIOD_IN_DAYS has passed. Starting a new queue.");
         stateFile = fileSystem.getPathOfNewProcessStateFile();
         processState = createNewProcessState(newQueueConfig, fileSystem.getNewProcessOutputFileName(), getNow);
-        console.log(`New process state file: ${stateFile}`);
-        console.log(`New process state: ${JSON.stringify(processState)}`);
+        logger.info(`New process state file: ${stateFile}`);
+        logger.debug(`New process state: ${JSON.stringify(processState)}`);
     }
 
-    console.log("Starting the search now...");
-    console.log(`Number of unresolved tasks: ${Object.keys(processState.unresolved).length}`);
-    console.log(`Number of resolved tasks: ${Object.keys(processState.resolved).length}`);
-    console.log(`Number of errored tasks: ${Object.keys(processState.errored).length}`);
+    logger.info("Starting the search now...");
+    logger.info(`Number of unresolved tasks: ${Object.keys(processState.unresolved).length}`);
+    logger.info(`Number of resolved tasks: ${Object.keys(processState.resolved).length}`);
+    logger.info(`Number of errored tasks: ${Object.keys(processState.errored).length}`);
 
     const taskStore = {
         unresolved: processState.unresolved,
