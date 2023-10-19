@@ -1,6 +1,6 @@
 {
   "name": "@opentr/cuttlecat",
-  "version": "0.0.4",
+  "version": "0.0.5-dev",
   "description": "CuttleCat collects information from GitHub about open source contributors and their contributions.",
   "keywords": [
     "github",
