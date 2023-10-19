@@ -1,0 +1,109 @@
+[
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query RepositorySearch($searchString: String!, $first: Int!, $after: String) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n    pageInfo {\n      startCursor\n      hasNextPage\n      endCursor\n    }\n    repositoryCount\n    nodes {\n      ...RepositorySummary\n    }\n  }\n}\n    \n    fragment RepositorySummary on Repository {\n  nameWithOwner\n  isInOrganization\n  owner {\n    login\n  }\n  forkCount\n  stargazerCount\n  pullRequests {\n    totalCount\n  }\n  issues {\n    totalCount\n  }\n  mentionableUsers {\n    totalCount\n  }\n  watchers {\n    totalCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-01-01 created:2023-01-01..2023-01-01",
+        "first": 100,
+        "after": null
+      }
+    },
+    "status": 200,
+    "response": {
+      "data": {
+        "rateLimit": {
+          "limit": 1000,
+          "remaining": 999,
+          "used": 1
+        },
+        "search": {
+          "pageInfo": {
+            "startCursor": "search_1_start",
+            "hasNextPage": true,
+            "endCursor": "search_1_end"
+          },
+          "repositoryCount": 1,
+          "nodes": [
+            {
+              "nameWithOwner": "search_1/repo_1"
+            }
+          ]
+        }
+      }
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  },
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query RepositorySearch($searchString: String!, $first: Int!, $after: String) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n    pageInfo {\n      startCursor\n      hasNextPage\n      endCursor\n    }\n    repositoryCount\n    nodes {\n      ...RepositorySummary\n    }\n  }\n}\n    \n    fragment RepositorySummary on Repository {\n  nameWithOwner\n  isInOrganization\n  owner {\n    login\n  }\n  forkCount\n  stargazerCount\n  pullRequests {\n    totalCount\n  }\n  issues {\n    totalCount\n  }\n  mentionableUsers {\n    totalCount\n  }\n  watchers {\n    totalCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-01-01 created:2023-01-02..2023-01-02",
+        "first": 100,
+        "after": null
+      }
+    },
+    "status": 403,
+    "response": {
+      "documentation_url": "https://docs.github.com/en/free-pro-team@latest/rest/overview/resources-in-the-rest-api#secondary-rate-limits",
+      "message": "You have exceeded a secondary rate limit. Please wait a few minutes before you try again. If you reach out to GitHub Support for help, please include the request ID 6442:5564:119CB9:240639:65303C06."
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com",
+      "Retry-After",
+      "60"
+    ],
+    "responseIsBinary": false
+  },
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query RepositorySearch($searchString: String!, $first: Int!, $after: String) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n    pageInfo {\n      startCursor\n      hasNextPage\n      endCursor\n    }\n    repositoryCount\n    nodes {\n      ...RepositorySummary\n    }\n  }\n}\n    \n    fragment RepositorySummary on Repository {\n  nameWithOwner\n  isInOrganization\n  owner {\n    login\n  }\n  forkCount\n  stargazerCount\n  pullRequests {\n    totalCount\n  }\n  issues {\n    totalCount\n  }\n  mentionableUsers {\n    totalCount\n  }\n  watchers {\n    totalCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-01-01 created:2023-01-01..2023-01-01",
+        "first": 100,
+        "after": "search_1_end"
+      }
+    },
+    "status": 200,
+    "response": {
+      "data": {
+        "rateLimit": {
+          "limit": 1000,
+          "remaining": 997,
+          "used": 3
+        },
+        "search": {
+          "pageInfo": {
+            "startCursor": "search_1_next_page_start",
+            "hasNextPage": false,
+            "endCursor": "search_1_next_page_end"
+          },
+          "repositoryCount": 1,
+          "nodes": [
+            {
+              "nameWithOwner": "search_1_next_page/repo_1"
+            }
+          ]
+        }
+      }
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  }
+]

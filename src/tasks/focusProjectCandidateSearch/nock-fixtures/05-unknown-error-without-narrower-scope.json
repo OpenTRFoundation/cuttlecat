@@ -1,0 +1,151 @@
+[
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query RepositorySearch($searchString: String!, $first: Int!, $after: String) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n    pageInfo {\n      startCursor\n      hasNextPage\n      endCursor\n    }\n    repositoryCount\n    nodes {\n      ...RepositorySummary\n    }\n  }\n}\n    \n    fragment RepositorySummary on Repository {\n  nameWithOwner\n  isInOrganization\n  owner {\n    login\n  }\n  forkCount\n  stargazerCount\n  pullRequests {\n    totalCount\n  }\n  issues {\n    totalCount\n  }\n  mentionableUsers {\n    totalCount\n  }\n  watchers {\n    totalCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-01-01 created:2023-01-01..2023-01-01",
+        "first": 100,
+        "after": null
+      }
+    },
+    "status": 200,
+    "response": {
+      "data": {
+        "rateLimit": {
+          "limit": 1000,
+          "remaining": 999,
+          "used": 1
+        },
+        "search": {
+          "pageInfo": {
+            "startCursor": "search_1_start",
+            "hasNextPage": false,
+            "endCursor": "search_1_end"
+          },
+          "repositoryCount": 1,
+          "nodes": [
+            {
+              "nameWithOwner": "search_1/repo_1"
+            }
+          ]
+        }
+      }
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  },
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query RepositorySearch($searchString: String!, $first: Int!, $after: String) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n    pageInfo {\n      startCursor\n      hasNextPage\n      endCursor\n    }\n    repositoryCount\n    nodes {\n      ...RepositorySummary\n    }\n  }\n}\n    \n    fragment RepositorySummary on Repository {\n  nameWithOwner\n  isInOrganization\n  owner {\n    login\n  }\n  forkCount\n  stargazerCount\n  pullRequests {\n    totalCount\n  }\n  issues {\n    totalCount\n  }\n  mentionableUsers {\n    totalCount\n  }\n  watchers {\n    totalCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-01-01 created:2023-01-02..2023-01-02",
+        "first": 100,
+        "after": null
+      }
+    },
+    "status": 502,
+    "response": {
+      "data": null,
+      "errors": [
+        {
+          "message": "Something went wrong while executing your query. This may be the result of a timeout, or it could be a GitHub bug. Please include `6445:9E27:1037D0:21317D:65303BF2` when reporting this issue."
+        }
+      ]
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  },
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query RepositorySearch($searchString: String!, $first: Int!, $after: String) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n    pageInfo {\n      startCursor\n      hasNextPage\n      endCursor\n    }\n    repositoryCount\n    nodes {\n      ...RepositorySummary\n    }\n  }\n}\n    \n    fragment RepositorySummary on Repository {\n  nameWithOwner\n  isInOrganization\n  owner {\n    login\n  }\n  forkCount\n  stargazerCount\n  pullRequests {\n    totalCount\n  }\n  issues {\n    totalCount\n  }\n  mentionableUsers {\n    totalCount\n  }\n  watchers {\n    totalCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-01-01 created:2023-01-02..2023-01-02",
+        "first": 100,
+        "after": null
+      }
+    },
+    "status": 502,
+    "response": {
+      "data": null,
+      "errors": [
+        {
+          "message": "Something went wrong while executing your query. This may be the result of a timeout, or it could be a GitHub bug. Please include `6445:9E27:1037D0:21317D:65303BF2` when reporting this issue."
+        }
+      ]
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  },
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query RepositorySearch($searchString: String!, $first: Int!, $after: String) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n    pageInfo {\n      startCursor\n      hasNextPage\n      endCursor\n    }\n    repositoryCount\n    nodes {\n      ...RepositorySummary\n    }\n  }\n}\n    \n    fragment RepositorySummary on Repository {\n  nameWithOwner\n  isInOrganization\n  owner {\n    login\n  }\n  forkCount\n  stargazerCount\n  pullRequests {\n    totalCount\n  }\n  issues {\n    totalCount\n  }\n  mentionableUsers {\n    totalCount\n  }\n  watchers {\n    totalCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-01-01 created:2023-01-02..2023-01-02",
+        "first": 100,
+        "after": null
+      }
+    },
+    "status": 502,
+    "response": {
+      "data": null,
+      "errors": [
+        {
+          "message": "Something went wrong while executing your query. This may be the result of a timeout, or it could be a GitHub bug. Please include `6445:9E27:1037D0:21317D:65303BF2` when reporting this issue."
+        }
+      ]
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  },
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query RepositorySearch($searchString: String!, $first: Int!, $after: String) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n    pageInfo {\n      startCursor\n      hasNextPage\n      endCursor\n    }\n    repositoryCount\n    nodes {\n      ...RepositorySummary\n    }\n  }\n}\n    \n    fragment RepositorySummary on Repository {\n  nameWithOwner\n  isInOrganization\n  owner {\n    login\n  }\n  forkCount\n  stargazerCount\n  pullRequests {\n    totalCount\n  }\n  issues {\n    totalCount\n  }\n  mentionableUsers {\n    totalCount\n  }\n  watchers {\n    totalCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-01-01 created:2023-01-02..2023-01-02",
+        "first": 100,
+        "after": null
+      }
+    },
+    "status": 502,
+    "response": {
+      "data": null,
+      "errors": [
+        {
+          "message": "Something went wrong while executing your query. This may be the result of a timeout, or it could be a GitHub bug. Please include `6445:9E27:1037D0:21317D:65303BF2` when reporting this issue."
+        }
+      ]
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  }
+]
