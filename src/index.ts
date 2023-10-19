@@ -17,6 +17,12 @@ async function focusProjectCandidateSearch() {
     await (await import("./tasks/focusProjectCandidateSearch/process.js")).main();
 }
 
+async function printIsLatestFileComplete() {
+    await initializeDynamicImports();
+
+    (await import("./tasks/focusProjectCandidateSearch/process.js")).printIsLatestFileComplete();
+}
+
 function buildConfigFromEnvVars() {
     return cleanEnv(process.env, {
         PROCESS: str({
@@ -63,6 +69,9 @@ async function main() {
     switch (config.PROCESS) {
         case "FOCUS_PROJECT_CANDIDATE_SEARCH":
             await focusProjectCandidateSearch();
+            break;
+        case "FOCUS_PROJECT_CANDIDATE_SEARCH_LATEST_FILE_COMPLETE":
+            await printIsLatestFileComplete();
             break;
         default:
             throw new Error(`Unknown process: ${config.PROCESS}`);

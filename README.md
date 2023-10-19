@@ -24,6 +24,7 @@ npm run start
 `PROCESS` can be one of the following:
 
 - `FOCUS_PROJECT_CANDIDATE_SEARCH` - search for projects that can be used to identify the organizations that have focus projects
+- `FOCUS_PROJECT_CANDIDATE_SEARCH_LATEST_FILE_COMPLETE` - if the latest file for `FOCUS_PROJECT_CANDIDATE_SEARCH` is complete, print "true" in the console, otherwise print "false"
 
 ### Recording HTTP calls
 
@@ -96,6 +97,24 @@ PROCESS="FOCUS_PROJECT_CANDIDATE_SEARCH" \
 MIN_AGE_IN_DAYS=5750 \
 RECORD_HTTP_CALLS=true \
 LOG_LEVEL="debug" \
+npm run start
+```
+### Process `FOCUS_PROJECT_CANDIDATE_SEARCH_LATEST_FILE_COMPLETE`
+
+Supports the following environment variables:
+
+| Name                              | Description                                           | Default value | Persisted |
+|-----------------------------------|-------------------------------------------------------|---------------|-----------|
+| `GITHUB_TOKEN`                    | GitHub API token. Token doesn't need any permissions. | N/A           | No        |
+| `DATA_DIRECTORY`                  | Data directory to check the latest file.              | N/A           | No        |
+
+You will want to use "LOG_LEVEL=error" to see the output and only the output.
+
+```shell
+GITHUB_TOKEN="$(gh auth token)" \
+DATA_DIRECTORY="/Users/aliok/go/src/github.com/opentrfoundation/state-of-oss-contribution/focus-project-candidate-search" \
+PROCESS="FOCUS_PROJECT_CANDIDATE_SEARCH_LATEST_FILE_COMPLETE" \
+LOG_LEVEL="error" \
 npm run start
 ```
 

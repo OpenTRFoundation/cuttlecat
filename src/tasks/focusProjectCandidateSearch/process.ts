@@ -313,21 +313,41 @@ function reportTaskQueue(taskQueue:TaskQueue<FocusProjectCandidateSearchQuery, T
     return queueState;
 }
 
-export async function main() {
-    logger.info("Starting focus project search");
-    const processConfig = buildProcessConfigFromEnvVars();
-    const newQueueConfig = buildNewQueueConfigFromEnvVars();
-    // store the output of current run as an array of objects
-    // these objects will be written to the output file at the end of the run
-    const currentRunOutput:FileOutput[] = [];
-
-    const fileSystem = new FileSystem(
+function getFileSystem(processConfig:any) {
+    return new FileSystem(
         processConfig.DATA_DIRECTORY,
         "process-state-",
         ".json",
         "process-output-",
         ".json",
     );
+}
+
+export function printIsLatestFileComplete() {
+    const processConfig = buildProcessConfigFromEnvVars();
+    const fileSystem = getFileSystem(processConfig);
+    const latestProcessStateFile = fileSystem.getLatestProcessStateFile();
+    if (latestProcessStateFile == null) {
+        // do not use logger here, as the caller will use the process output
+        console.log("true");
+        return;
+    }
+
+    const processState = JSON.parse(readFileSync(latestProcessStateFile, "utf8"));
+
+    // do not use logger here, as the caller will use the process output
+    console.log(processState.completionDate != null);
+}
+
+export async function main() {
+    logger.info("Starting focus project candidate search");
+    const processConfig = buildProcessConfigFromEnvVars();
+    const newQueueConfig = buildNewQueueConfigFromEnvVars();
+    // store the output of current run as an array of objects
+    // these objects will be written to the output file at the end of the run
+    const currentRunOutput:FileOutput[] = [];
+
+    const fileSystem = getFileSystem(processConfig);
 
     logger.info(`Read process config:` + JSON.stringify(processConfig, (key, value) => {
         if (key == "GITHUB_TOKEN") {
