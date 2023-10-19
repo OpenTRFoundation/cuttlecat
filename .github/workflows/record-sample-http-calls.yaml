@@ -11,7 +11,7 @@ env:
   # workflow related
   RECORD_HTTP_CALLS: true
   # cuttlecat related
-  PROCESS: FOCUS_PROJECT_SEARCH
+  PROCESS: FOCUS_PROJECT_CANDIDATE_SEARCH
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   DATA_DIRECTORY: ${{ github.workspace }}
 

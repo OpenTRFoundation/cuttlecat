@@ -23,7 +23,7 @@ npm run start
 
 `PROCESS` can be one of the following:
 
-- `FOCUS_PROJECT_SEARCH` - search for projects that match the criteria
+- `FOCUS_PROJECT_CANDIDATE_SEARCH` - search for projects that can be used to identify the organizations that have focus projects
 
 ### Recording HTTP calls
 
@@ -32,7 +32,7 @@ where the new records will be created.
 
 The calls will be stored in the `./nock-records/${PROCESS}_${timestamp}` directory.
 
-### Process `FOCUS_PROJECT_SEARCH`
+### Process `FOCUS_PROJECT_CANDIDATE_SEARCH`
 
 Supports the following environment variables:
 
@@ -75,7 +75,7 @@ mkdir -p /tmp/foo/bar
 
 GITHUB_TOKEN="$(gh auth token)" \
 DATA_DIRECTORY="/tmp/foo/bar" \
-PROCESS="FOCUS_PROJECT_SEARCH" \
+PROCESS="FOCUS_PROJECT_CANDIDATE_SEARCH" \
 MIN_AGE_IN_DAYS=5700 \
 npm run start
 ```
@@ -89,7 +89,7 @@ mkdir -p /tmp/foo/bar
 
 GITHUB_TOKEN="$(gh auth token)" \
 DATA_DIRECTORY="/tmp/foo/bar" \
-PROCESS="FOCUS_PROJECT_SEARCH" \
+PROCESS="FOCUS_PROJECT_CANDIDATE_SEARCH" \
 MIN_AGE_IN_DAYS=5750 \
 RECORD_HTTP_CALLS=true \
 npm run start

@@ -10,7 +10,7 @@ async function initializeDynamicImports() {
     await loadDynamicImports();
 }
 
-async function focusProjectSearch() {
+async function focusProjectCandidateSearch() {
     await initializeDynamicImports();
 
     await (await import("./tasks/focusProjectCandidateSearch/process.js")).main();
@@ -20,7 +20,7 @@ async function focusProjectSearch() {
 function buildConfigFromEnvVars() {
     return cleanEnv(process.env, {
         PROCESS: str({
-            desc: "Process to run. One of these: [FOCUS_PROJECT_SEARCH]",
+            desc: "Process to run. One of these: [FOCUS_PROJECT_CANDIDATE_SEARCH]",
         }),
         RECORD_HTTP_CALLS: bool({
             desc: "Record HTTP calls to disk for debugging purposes.",
@@ -54,8 +54,8 @@ async function main() {
     }
 
     switch (config.PROCESS) {
-        case "FOCUS_PROJECT_SEARCH":
-            await focusProjectSearch();
+        case "FOCUS_PROJECT_CANDIDATE_SEARCH":
+            await focusProjectCandidateSearch();
             break;
         default:
             throw new Error(`Unknown process: ${config.PROCESS}`);
