@@ -13,7 +13,7 @@ function getKeysSortedByCreatedAfter(unresolved:{ [key:string]:TaskOptions }) {
     });
 }
 
-describe('focusProjectCandidateSearch', () => {
+describe('focusProjectCandidateSearch unit test', () => {
     describe('#createNewProcessState()', function () {
         it('should create new process state, 1 day range, 1 day interval', function () {
             const config:QueueConfig = {

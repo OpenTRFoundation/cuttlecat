@@ -1,4 +1,4 @@
-import {ProjectSearchTask} from "./task";
+import {Task} from "./task";
 import {graphql} from "@octokit/graphql";
 import {RepositorySearch} from "../../generated/queries";
 import {TaskOptions} from "./types";
@@ -7,7 +7,7 @@ import chaiAsPromised from "chai-as-promised";
 
 chai.use(chaiAsPromised);
 
-describe('ProjectSearchTask', () => {
+describe('focusProjectCandidateSearch Task', () => {
     describe('#execute()', function () {
         it('should return proper response', async () => {
             const signal = new AbortController().signal;
@@ -42,7 +42,7 @@ describe('ProjectSearchTask', () => {
                 startCursor: "start",
             };
 
-            const task = new ProjectSearchTask(fakeGraphql, 0, [], options);
+            const task = new Task(fakeGraphql, 0, [], options);
             const response = await task.execute(signal);
 
             expect(response).to.be.equal(output);
@@ -64,7 +64,7 @@ describe('ProjectSearchTask', () => {
                 }
             };
 
-            const task = new ProjectSearchTask(fakeGraphql, 0, [], <any>{});
+            const task = new Task(fakeGraphql, 0, [], <any>{});
             return expect(task.execute(signal)).to.eventually.be.rejectedWith(/fail/);
         });
         it('should handle aborts', function () {
@@ -89,7 +89,7 @@ describe('ProjectSearchTask', () => {
                 abortController.abort();
             }, 100);
 
-            const task = new ProjectSearchTask(fakeGraphql, 0, [], <any>{});
+            const task = new Task(fakeGraphql, 0, [], <any>{});
             return expect(task.execute(signal)).to.eventually.be.rejectedWith(/abort/);
         });
         it('should not start if signal is aborted', function () {
@@ -97,7 +97,7 @@ describe('ProjectSearchTask', () => {
             const signal = abortController.signal;
             abortController.abort();
 
-            const task = new ProjectSearchTask(graphql, 0, [], <any>{});
+            const task = new Task(graphql, 0, [], <any>{});
             return expect(task.execute(signal)).to.eventually.be.rejectedWith(/This operation was aborted/);
         });
     });
@@ -127,7 +127,7 @@ describe('ProjectSearchTask', () => {
             };
 
             // @ts-ignore
-            let nextTask:ProjectSearchTask = new ProjectSearchTask(graphql, 0, [], options).nextTask(output);
+            let nextTask:Task = new Task(graphql, 0, [], options).nextTask(output);
             expect(nextTask).to.be.not.null;
 
             // fixed
@@ -157,7 +157,7 @@ describe('ProjectSearchTask', () => {
             };
 
             // @ts-ignore
-            let nextTask:ProjectSearchTask = new ProjectSearchTask(graphql, 0, [], options).nextTask(output);
+            let nextTask:Task = new Task(graphql, 0, [], options).nextTask(output);
             expect(nextTask).to.be.null;
         });
     });
@@ -177,7 +177,7 @@ describe('ProjectSearchTask', () => {
                 startCursor: null,
             };
             // @ts-ignore
-            let tasks:ProjectSearchTask[] = new ProjectSearchTask(graphql, 0, [], options).narrowedDownTasks();
+            let tasks:Task[] = new Task(graphql, 0, [], options).narrowedDownTasks();
             expect(tasks).to.be.not.empty;
             expect(tasks).to.have.lengthOf(2);
 
@@ -222,7 +222,7 @@ describe('ProjectSearchTask', () => {
                 startCursor: null,
             };
             // @ts-ignore
-            let tasks:ProjectSearchTask[] = new ProjectSearchTask(graphql, 0, [], options).narrowedDownTasks();
+            let tasks:Task[] = new Task(graphql, 0, [], options).narrowedDownTasks();
             expect(tasks).to.be.not.empty;
             expect(tasks).to.have.lengthOf(2);
 
@@ -249,7 +249,7 @@ describe('ProjectSearchTask', () => {
                 startCursor: "start",
             };
             // @ts-ignore
-            let tasks:ProjectSearchTask[] = new ProjectSearchTask(graphql, 0, [], options).narrowedDownTasks();
+            let tasks:Task[] = new Task(graphql, 0, [], options).narrowedDownTasks();
             expect(tasks).to.be.not.empty;
             expect(tasks).to.have.lengthOf(2);
 
@@ -280,14 +280,14 @@ describe('ProjectSearchTask', () => {
                 startCursor: "start",
             };
             // @ts-ignore
-            let tasks:ProjectSearchTask[] = new ProjectSearchTask(graphql, 0, [], options).narrowedDownTasks();
+            let tasks:Task[] = new Task(graphql, 0, [], options).narrowedDownTasks();
             expect(tasks).to.be.null;
         });
     });
     describe('#shouldAbort()', function () {
         it('should return true, when there is no primary rate limit info', function () {
             const output:any = {};
-            expect(new ProjectSearchTask(graphql, 0, [], <any>{}).shouldAbort(output)).to.be.true;
+            expect(new Task(graphql, 0, [], <any>{}).shouldAbort(output)).to.be.true;
         });
         it('should return true, when primary rate limit info does not have remaining information', function () {
             const output:any = {
@@ -295,7 +295,7 @@ describe('ProjectSearchTask', () => {
                     "foo": "bar",
                 }
             };
-            expect(new ProjectSearchTask(graphql, 0, [], <any>{}).shouldAbort(output)).to.be.true;
+            expect(new Task(graphql, 0, [], <any>{}).shouldAbort(output)).to.be.true;
         });
         it('should return true, when primary rate limit info does not have limit information', function () {
             const output:any = {
@@ -303,7 +303,7 @@ describe('ProjectSearchTask', () => {
                     "remaining": 1,
                 }
             };
-            expect(new ProjectSearchTask(graphql, 0, [], <any>{}).shouldAbort(output)).to.be.true;
+            expect(new Task(graphql, 0, [], <any>{}).shouldAbort(output)).to.be.true;
         });
         it('should return true, when primary rate limit remaining is below config percent', function () {
             const output:any = {
@@ -312,7 +312,7 @@ describe('ProjectSearchTask', () => {
                     "limit": 100,
                 }
             };
-            expect(new ProjectSearchTask(graphql, 10, [], <any>{}).shouldAbort(output)).to.be.true;
+            expect(new Task(graphql, 10, [], <any>{}).shouldAbort(output)).to.be.true;
         });
         it('should return false, when primary rate limit remaining is above config percent', function () {
             const output:any = {
@@ -321,7 +321,7 @@ describe('ProjectSearchTask', () => {
                     "limit": 100,
                 }
             };
-            expect(new ProjectSearchTask(graphql, 10, [], <any>{}).shouldAbort(output)).to.be.false;
+            expect(new Task(graphql, 10, [], <any>{}).shouldAbort(output)).to.be.false;
         });
         it('should return false, when primary rate limit remaining is equal to config percent', function () {
             const output:any = {
@@ -330,7 +330,7 @@ describe('ProjectSearchTask', () => {
                     "limit": 100,
                 }
             };
-            expect(new ProjectSearchTask(graphql, 10, [], <any>{}).shouldAbort(output)).to.be.false;
+            expect(new Task(graphql, 10, [], <any>{}).shouldAbort(output)).to.be.false;
         });
     });
     describe('#shouldAbortAfterError()', function () {
@@ -340,7 +340,7 @@ describe('ProjectSearchTask', () => {
                     "retry-after": "60",
                 }
             };
-            expect(new ProjectSearchTask(graphql, 0, [], <any>{}).shouldAbortAfterError(err)).to.be.true;
+            expect(new Task(graphql, 0, [], <any>{}).shouldAbortAfterError(err)).to.be.true;
         });
         it('should return true, when secondary rate limit not reached', function () {
             const err = {
@@ -348,7 +348,7 @@ describe('ProjectSearchTask', () => {
                     "foo": "bar",
                 }
             };
-            expect(new ProjectSearchTask(graphql, 0, [], <any>{}).shouldAbortAfterError(err)).to.be.false;
+            expect(new Task(graphql, 0, [], <any>{}).shouldAbortAfterError(err)).to.be.false;
         });
     });
     describe('#getErrorMessage()', function () {
@@ -364,19 +364,19 @@ describe('ProjectSearchTask', () => {
                 ],
                 message: "bar",
             };
-            expect(new ProjectSearchTask(graphql, 0, [], <any>{id: "deadbeef"}).getErrorMessage(err)).to.be.equal("Error in task deadbeef: bar. Headers: {\"a\":\"b\"}. Error: foo.");
+            expect(new Task(graphql, 0, [], <any>{id: "deadbeef"}).getErrorMessage(err)).to.be.equal("Error in task deadbeef: bar. Headers: {\"a\":\"b\"}. Error: foo.");
         });
         it('should return message, when non-http error happened', function () {
             const err = {
                 message: "bar",
             };
-            expect(new ProjectSearchTask(graphql, 0, [], <any>{id: "deadbeef"}).getErrorMessage(err)).to.be.equal("Error in task deadbeef: bar.");
+            expect(new Task(graphql, 0, [], <any>{id: "deadbeef"}).getErrorMessage(err)).to.be.equal("Error in task deadbeef: bar.");
         });
         it('should return error json, when there is no error message', function () {
             const err = {
                 "foo": "bar",
             };
-            expect(new ProjectSearchTask(graphql, 0, [], <any>{id: "deadbeef"}).getErrorMessage(err)).to.be.equal("Error in task deadbeef: {\"foo\":\"bar\"}");
+            expect(new Task(graphql, 0, [], <any>{id: "deadbeef"}).getErrorMessage(err)).to.be.equal("Error in task deadbeef: {\"foo\":\"bar\"}");
         });
         it('should throw exception, when secondary rate limit reached', function () {
             const err = {
@@ -385,7 +385,7 @@ describe('ProjectSearchTask', () => {
                 },
             };
             let fn = () => {
-                new ProjectSearchTask(graphql, 0, [], <any>{}).getErrorMessage(err);
+                new Task(graphql, 0, [], <any>{}).getErrorMessage(err);
             };
             expect(fn).to.throw(/Secondary rate limit error/);
         });
@@ -395,14 +395,14 @@ describe('ProjectSearchTask', () => {
             const err = {
                 foo: {"a": "b"}
             };
-            expect(new ProjectSearchTask(graphql, 0, [], <any>{}).shouldRecordAsError(err)).to.be.true;
+            expect(new Task(graphql, 0, [], <any>{}).shouldRecordAsError(err)).to.be.true;
         });
         it('should return true, when error is a response error, but it is not a partial response', function () {
             const err = {
                 foo: {"a": "b"},
                 data: ["foo"]
             };
-            expect(new ProjectSearchTask(graphql, 0, [], <any>{}).shouldRecordAsError(err)).to.be.true;
+            expect(new Task(graphql, 0, [], <any>{}).shouldRecordAsError(err)).to.be.true;
         });
         it('should return false, when error is a partial response error', function () {
             const err = {
@@ -410,13 +410,13 @@ describe('ProjectSearchTask', () => {
                 headers: [],
                 data: ["foo"]
             };
-            expect(new ProjectSearchTask(graphql, 0, [], <any>{}).shouldRecordAsError(err)).to.be.false;
+            expect(new Task(graphql, 0, [], <any>{}).shouldRecordAsError(err)).to.be.false;
         });
     });
     describe('#extractOutputFromError()', function () {
         it('should throw error, if error is not a partial reponse error', function () {
             let fn = () => {
-                new ProjectSearchTask(graphql, 0, [], <any>{}).extractOutputFromError({});
+                new Task(graphql, 0, [], <any>{}).extractOutputFromError({});
             };
             expect(fn).to.throw(/Invalid error object/);
         });
@@ -424,7 +424,7 @@ describe('ProjectSearchTask', () => {
             const err = {
                 data: {"a": "b"}
             };
-            expect(new ProjectSearchTask(graphql, 0, [], <any>{}).extractOutputFromError(err)).to.be.equal(err.data);
+            expect(new Task(graphql, 0, [], <any>{}).extractOutputFromError(err)).to.be.equal(err.data);
         });
     });
 });

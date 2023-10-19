@@ -173,7 +173,7 @@ const testMatrix = [
     },
 ];
 
-describe('focusProjectCandidateSearch', () => {
+describe('focusProjectCandidateSearch mock test', () => {
     testMatrix.forEach((test) => {
         it(test.fixture, async () => {
             await loadDynamicImports();

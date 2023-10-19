@@ -9,7 +9,7 @@ import {addDays, daysInPeriod, formatDate, now as getNow, parseDate, subtractDay
 import FileSystem from "../../fileSystem";
 import {shuffle} from "lodash";
 import {FileOutput, ProcessState, QueueConfig, TaskOptions} from "./types";
-import {ProjectSearchTask} from "./task";
+import {Task} from "./task";
 import fetch from "node-fetch";
 
 export class Process {
@@ -54,7 +54,7 @@ export class Process {
         }
 
         for (let key in this.processState.unresolved) {
-            const task = new ProjectSearchTask(this.graphqlFn, this.options.rateLimitStopPercent, this.currentRunOutput, this.processState.unresolved[key]);
+            const task = new Task(this.graphqlFn, this.options.rateLimitStopPercent, this.currentRunOutput, this.processState.unresolved[key]);
             console.log(`Adding task to queue: ${task.getId()}`);
             // DO NOT await here, as it will block the loop
             // fire and forget.

@@ -5,7 +5,7 @@ import {RepositorySearch, RepositorySearchQuery, RepositorySummaryFragment} from
 import {FileOutput, TaskOptions} from "./types";
 import {formatDate, parseDate, splitPeriodIntoHalves} from "../../utils";
 
-export class ProjectSearchTask extends BaseTask<RepositorySearchQuery, TaskOptions> {
+export class Task extends BaseTask<RepositorySearchQuery, TaskOptions> {
     private readonly graphqlWithAuth:typeof graphql<RepositorySearchQuery>;
     private readonly rateLimitStopPercent:number;
     private readonly currentRunOutput:FileOutput[];
@@ -76,10 +76,10 @@ export class ProjectSearchTask extends BaseTask<RepositorySearchQuery, TaskOptio
         };
     }
 
-    nextTask(output:RepositorySearchQuery):ProjectSearchTask | null {
+    nextTask(output:RepositorySearchQuery):Task | null {
         if (output.search.pageInfo.hasNextPage) {
             console.log(`Next page available for task: ${this.getId()}`);
-            return new ProjectSearchTask(
+            return new Task(
                 this.graphqlWithAuth,
                 this.rateLimitStopPercent,
                 this.currentRunOutput,
@@ -102,7 +102,7 @@ export class ProjectSearchTask extends BaseTask<RepositorySearchQuery, TaskOptio
         return null;
     }
 
-    narrowedDownTasks():ProjectSearchTask[] | null {
+    narrowedDownTasks():Task[] | null {
         // Project search can't narrow down the scopes of the tasks that start from a cursor.
         // That's because:
         // - The cursor is bound to the date range previously used.
@@ -115,7 +115,7 @@ export class ProjectSearchTask extends BaseTask<RepositorySearchQuery, TaskOptio
             console.log(`Creating narrowed down tasks for the originating task ${this.options.originatingTaskId}`);
         }
 
-        let newTasks:ProjectSearchTask[] = [];
+        let newTasks:Task[] = [];
         const startDate = parseDate(this.options.createdAfter);
         const endDate = parseDate(this.options.createdBefore);
 
@@ -128,7 +128,7 @@ export class ProjectSearchTask extends BaseTask<RepositorySearchQuery, TaskOptio
         for (let i = 0; i < halfPeriods.length; i++) {
             const halfPeriod = halfPeriods[i];
             newTasks.push(
-                new ProjectSearchTask(
+                new Task(
                     this.graphqlWithAuth,
                     this.rateLimitStopPercent,
                     this.currentRunOutput,
