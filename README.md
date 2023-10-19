@@ -32,6 +32,10 @@ where the new records will be created.
 
 The calls will be stored in the `./nock-records/${PROCESS}_${timestamp}` directory.
 
+### Enabling debug logging.
+
+Set `ENABLE_DEBUG_LOGGING=true` to enable debug logging.
+
 ### Process `FOCUS_PROJECT_CANDIDATE_SEARCH`
 
 Supports the following environment variables:
@@ -64,8 +68,6 @@ search process. Those values will only be used if there's a new process file cre
 
 The options marked as `No` in the `Persisted` column will always be used from the environment variables.
 
-The output will be written to the `./data/focus-project-search` directory.
-
 To start the process with defaults but with a short search date range:
 
 ```shell
@@ -77,6 +79,7 @@ GITHUB_TOKEN="$(gh auth token)" \
 DATA_DIRECTORY="/tmp/foo/bar" \
 PROCESS="FOCUS_PROJECT_CANDIDATE_SEARCH" \
 MIN_AGE_IN_DAYS=5700 \
+ENABLE_DEBUG_LOGGING=true \
 npm run start
 ```
 
@@ -92,6 +95,7 @@ DATA_DIRECTORY="/tmp/foo/bar" \
 PROCESS="FOCUS_PROJECT_CANDIDATE_SEARCH" \
 MIN_AGE_IN_DAYS=5750 \
 RECORD_HTTP_CALLS=true \
+ENABLE_DEBUG_LOGGING=true \
 npm run start
 ```
 
