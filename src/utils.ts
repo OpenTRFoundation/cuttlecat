@@ -16,12 +16,16 @@ export function parseDate(s:string):Date {
     if (!s) {
         throw new Error("Date string is empty");
     }
-    let date = doParseDate(s, "yyyy-MM-dd", new Date());
+    let date = doParseDate(s, "yyyy-MM-dd", now());
     return startOfDay(date);
 }
 
+export function now() {
+    return new Date();
+}
+
 export function nowTimestamp() {
-    return formatTimeStamp(new Date());
+    return formatTimeStamp(now());
 }
 
 export function formatTimeStamp(date:Date) {
@@ -53,11 +57,15 @@ export function splitPeriodIntoHalves(start:Date, end:Date) {
  * @param step
  */
 export function daysInPeriod(start:Date, end:Date, step:number) {
-    let dates = eachDayOfInterval({start: start, end: end}, {step: step});
-    for (let i = 0; i < dates.length; i++) {
-        dates[i] = startOfDay(dates[i]);
+    try {
+        let dates = eachDayOfInterval({start: start, end: end}, {step: step});
+        for (let i = 0; i < dates.length; i++) {
+            dates[i] = startOfDay(dates[i]);
+        }
+        return dates;
+    } catch (e) {
+        throw new Error(`Failed to get days in period <${formatDate(start)}, ${formatDate(end)}>, step=${step}: ${e}`);
     }
-    return dates;
 }
 
 export function addDays(start:Date, days:number):Date {

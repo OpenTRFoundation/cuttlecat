@@ -5,7 +5,7 @@ import {bool, cleanEnv, num, str} from 'envalid'
 import {createWriteStream, readFileSync, writeFileSync} from 'fs'
 
 import {TaskQueue} from "../../taskqueue";
-import {addDays, daysInPeriod, formatDate, parseDate, subtractDays} from "../../utils";
+import {addDays, daysInPeriod, formatDate, now as getNow, parseDate, subtractDays} from "../../utils";
 import FileSystem from "../../fileSystem";
 import {shuffle} from "lodash";
 import {FileOutput, ProcessState, QueueConfig, TaskOptions} from "./types";
@@ -201,9 +201,9 @@ function buildNewQueueConfigFromEnvVars():QueueConfig {
 }
 
 
-function createNewProcessState(startingConfig:QueueConfig, outputFileName:string):ProcessState {
+export function createNewProcessState(startingConfig:QueueConfig, outputFileName:string, nowFn:() => Date):ProcessState {
     let startDate = parseDate(startingConfig.EXCLUDE_PROJECTS_CREATED_BEFORE);
-    let endDate = subtractDays(new Date(), startingConfig.MIN_AGE_IN_DAYS);
+    let endDate = subtractDays(nowFn(), startingConfig.MIN_AGE_IN_DAYS);
 
     // GitHub search API is inclusive for the start date and the end date.
     //
@@ -234,7 +234,7 @@ function createNewProcessState(startingConfig:QueueConfig, outputFileName:string
     // - 2023-01-06 - 2023-01-10
 
     let interval = daysInPeriod(startDate, endDate, startingConfig.SEARCH_PERIOD_IN_DAYS);
-    let hasActivityAfter = formatDate(subtractDays(new Date(), startingConfig.MAX_INACTIVITY_DAYS))
+    let hasActivityAfter = formatDate(subtractDays(nowFn(), startingConfig.MAX_INACTIVITY_DAYS))
 
     console.log(`Creating a new process state, startDate: ${formatDate(startDate)}, endDate: ${formatDate(endDate)}, hasActivityAfter: ${hasActivityAfter}`);
 
@@ -242,7 +242,7 @@ function createNewProcessState(startingConfig:QueueConfig, outputFileName:string
 
     for (let i = 0; i < interval.length; i++) {
         let createdAfter = formatDate(interval[i]);
-        let createdBefore = formatDate(addDays(interval[i], startingConfig.SEARCH_PERIOD_IN_DAYS));
+        let createdBefore = formatDate(addDays(interval[i], startingConfig.SEARCH_PERIOD_IN_DAYS - 1));
         let key = uuidv4();
         newTasks.push({
             id: key,
@@ -276,7 +276,7 @@ function createNewProcessState(startingConfig:QueueConfig, outputFileName:string
         resolved: {},
         errored: {},
         archived: {},
-        startDate: new Date(),
+        startDate: nowFn(),
         completionDate: null,
         completionError: null,
         outputFileName: outputFileName,
@@ -345,7 +345,7 @@ export async function main() {
     if (stateFile == null) {
         stateFile = fileSystem.getPathOfNewProcessStateFile();
         console.log(`There are no process state files, starting a new process. Path of state file will be: ${stateFile}`);
-        processState = createNewProcessState(newQueueConfig, fileSystem.getNewProcessOutputFileName());
+        processState = createNewProcessState(newQueueConfig, fileSystem.getNewProcessOutputFileName(), getNow);
     } else {
         console.log(`Found latest process state file: ${stateFile}`)
         processState = JSON.parse(readFileSync(stateFile, "utf8"));
@@ -359,7 +359,7 @@ export async function main() {
 
         console.log("Previous queue is completed.");
         // start a new one, but only if RENEW_PERIOD_IN_DAYS has passed
-        const now = new Date();
+        const now = getNow();
         const daysSinceCompletion = (now.getTime() - processState.completionDate.getTime()) / (1000 * 60 * 60 * 24);
         if (daysSinceCompletion < processConfig.RENEW_PERIOD_IN_DAYS) {
             console.log(`Previous process is completed, but RENEW_PERIOD_IN_DAYS of ${processConfig.RENEW_PERIOD_IN_DAYS} hasn't passed yet. It has been ${daysSinceCompletion} days. Exiting.`);
@@ -367,7 +367,7 @@ export async function main() {
         }
         console.log("Previous queue is completed, and RENEW_PERIOD_IN_DAYS has passed. Starting a new queue.");
         stateFile = fileSystem.getPathOfNewProcessStateFile();
-        processState = createNewProcessState(newQueueConfig, fileSystem.getNewProcessOutputFileName());
+        processState = createNewProcessState(newQueueConfig, fileSystem.getNewProcessOutputFileName(), getNow);
         console.log(`New process state file: ${stateFile}`);
         console.log(`New process state: ${JSON.stringify(processState)}`);
     }
@@ -403,7 +403,7 @@ export async function main() {
         }
     });
 
-    if(processConfig.RECORD_HTTP_CALLS) {
+    if (processConfig.RECORD_HTTP_CALLS) {
         graphqlWithAuth = graphqlWithAuth.defaults({
             headers: {
                 // nock doesn't really support gzip, so we need to disable it
@@ -445,7 +445,7 @@ export async function main() {
 
     if (Object.keys(processState.unresolved).length === 0) {
         // no unresolved tasks, so the queue is completed.
-        processState.completionDate = new Date();
+        processState.completionDate = getNow();
 
         // However, there might be some errored tasks.
         // TaskQueue itself is retrying those tasks, and it finishes if it gives up after N retries.

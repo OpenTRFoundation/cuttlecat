@@ -247,9 +247,9 @@ export class ProjectSearchTask extends BaseTask<RepositorySearchQuery, TaskOptio
         }
 
         if (error.message) {
-            return error.message;
+            return `Error in task ${this.getId()}: ${error.message}.`;
         }
-        return JSON.stringify(error);
+        return `Error in task ${this.getId()}: ${JSON.stringify(error)}`;
     }
 
     shouldRecordAsError(error:any):boolean {
