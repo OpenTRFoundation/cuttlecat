@@ -24,9 +24,9 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "start": "npx tsc && node dist/index.js",
+    "start": "npm run build && node dist/index.js",
     "build": "rimraf ./dist && npm run codegen && tsc",
-    "test": "mocha --require ts-node/register ./src/**/*.test.ts",
+    "test": "npm run build && mocha --require ts-node/register ./src/**/*.test.ts",
     "codegen": "graphql-codegen --config codegen.ts"
   },
   "devDependencies": {
