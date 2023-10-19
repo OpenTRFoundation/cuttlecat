@@ -63,7 +63,8 @@
     "nock": "^13.3.4",
     "node-fetch": "^2.7.0",
     "p-queue": "^7.4.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0"
   },
   "bugs": {
     "url": "https://github.com/OpenTRFoundation/cuttlecat/issues"
