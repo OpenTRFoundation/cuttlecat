@@ -34,7 +34,7 @@ The calls will be stored in the `./nock-records/${PROCESS}_${timestamp}` directo
 
 ### Enabling debug logging.
 
-Set `ENABLE_DEBUG_LOGGING=true` to enable debug logging.
+Set `LOG_LEVEL="debug"` to enable debug logging. Default log level is "info".
 
 ### Process `FOCUS_PROJECT_CANDIDATE_SEARCH`
 
@@ -79,7 +79,7 @@ GITHUB_TOKEN="$(gh auth token)" \
 DATA_DIRECTORY="/tmp/foo/bar" \
 PROCESS="FOCUS_PROJECT_CANDIDATE_SEARCH" \
 MIN_AGE_IN_DAYS=5700 \
-ENABLE_DEBUG_LOGGING=true \
+LOG_LEVEL="debug" \
 npm run start
 ```
 
@@ -95,7 +95,7 @@ DATA_DIRECTORY="/tmp/foo/bar" \
 PROCESS="FOCUS_PROJECT_CANDIDATE_SEARCH" \
 MIN_AGE_IN_DAYS=5750 \
 RECORD_HTTP_CALLS=true \
-ENABLE_DEBUG_LOGGING=true \
+LOG_LEVEL="debug" \
 npm run start
 ```
 

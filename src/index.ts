@@ -26,22 +26,16 @@ function buildConfigFromEnvVars() {
             desc: "Record HTTP calls to disk for debugging purposes.",
             default: false,
         }),
-        ENABLE_DEBUG_LOGGING: bool({
+        LOG_LEVEL: str({
             desc: "Enable debug logging.",
-            default: false,
+            default: "info",
         }),
     });
 }
 
 async function main() {
     const config = buildConfigFromEnvVars();
-    if (config.ENABLE_DEBUG_LOGGING) {
-        console.log("Setting log level to debug");
-        log.setLevel("debug");
-    } else {
-        console.log("Setting log level to info");
-        log.setLevel("info");
-    }
+    log.setLevel(config.LOG_LEVEL);
 
     let logger = log.createLogger("index");
 

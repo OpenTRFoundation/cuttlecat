@@ -22,10 +22,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set env ENABLE_DEBUG_LOGGING
+      - name: Override LOG_LEVEL if ACTIONS_RUNNER_DEBUG is true
         run: |
           if [[ "${ACTIONS_RUNNER_DEBUG:-false}" == true ]]; then
-            echo "ENABLE_DEBUG_LOGGING=true" >> "$GITHUB_ENV"
+            echo "LOG_LEVEL='debug'" >> "$GITHUB_ENV"
           fi
 
       - uses: actions/setup-node@v3
