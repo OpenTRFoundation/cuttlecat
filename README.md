@@ -134,3 +134,15 @@ npm run test
   --use-gitignore=true \
   --remote-name=origin
 ```
+
+### Downloading HTTP call recording
+
+Run the workflow.
+
+Then download the output, such as:
+
+```shell
+gh run view 6565769484 --job=17835015583 --log > foo.txt
+```
+
+Then manually copy paste some cases to the test fixtures.
