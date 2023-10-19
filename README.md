@@ -135,6 +135,7 @@ npm run test
   act --job=record-sample-http-calls-focus-project \
   -s GITHUB_TOKEN="$(gh auth token)" \
   --reuse=true \
+  -s ACTIONS_RUNNER_DEBUG="true" \
   --use-gitignore=true \
   --remote-name=origin
 ```

@@ -14,7 +14,7 @@ env:
   PROCESS: FOCUS_PROJECT_CANDIDATE_SEARCH
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   DATA_DIRECTORY: ${{ github.workspace }}
-
+  ACTIONS_RUNNER_DEBUG: ${{ secrets.ACTIONS_RUNNER_DEBUG }}
 
 jobs:
   record-sample-http-calls-focus-project:
@@ -22,6 +22,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Set env ENABLE_DEBUG_LOGGING
+        run: |
+          if [[ "${ACTIONS_RUNNER_DEBUG:-false}" == true ]]; then
+            echo "ENABLE_DEBUG_LOGGING=true" >> "$GITHUB_ENV"
+          fi
+
       - uses: actions/setup-node@v3
         with:
           node-version: 'lts/*'
