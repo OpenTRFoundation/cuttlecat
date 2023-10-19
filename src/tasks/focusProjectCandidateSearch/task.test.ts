@@ -1,6 +1,6 @@
 import {Task} from "./task";
 import {graphql} from "@octokit/graphql";
-import {RepositorySearch} from "../../generated/queries";
+import {FocusProjectCandidateSearch} from "../../generated/queries";
 import {TaskOptions} from "./types";
 import chai, {expect} from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -46,7 +46,7 @@ describe('focusProjectCandidateSearch Task', () => {
             const response = await task.execute(signal);
 
             expect(response).to.be.equal(output);
-            expect(executedQuery).to.be.equal(RepositorySearch.loc!.source.body);
+            expect(executedQuery).to.be.equal(FocusProjectCandidateSearch.loc!.source.body);
             expect(passedVariables).to.be.deep.equal({
                 "searchString": "is:public template:false archived:false stars:>5 forks:>5 size:>5 pushed:>2023-01-01 created:2023-01-01..2023-01-01",
                 "first": 5,

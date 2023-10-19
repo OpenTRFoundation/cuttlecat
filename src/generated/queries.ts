@@ -6843,14 +6843,14 @@ export enum WorkflowState {
   DisabledManually = 'DISABLED_MANUALLY'
 }
 
-export type RepositorySearchQueryVariables = Exact<{
+export type FocusProjectCandidateSearchQueryVariables = Exact<{
   searchString: Scalars['String']['input'];
   first: Scalars['Int']['input'];
   after?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type RepositorySearchQuery = { __typename?: 'Query', rateLimit?: { __typename?: 'RateLimit', cost: number, limit: number, nodeCount: number, remaining: number, resetAt: any, used: number } | null, search: { __typename?: 'SearchResultItemConnection', repositoryCount: number, pageInfo: { __typename?: 'PageInfo', startCursor?: string | null, hasNextPage: boolean, endCursor?: string | null }, nodes?: Array<{ __typename?: 'App' } | { __typename?: 'Discussion' } | { __typename?: 'Issue' } | { __typename?: 'MarketplaceListing' } | { __typename?: 'Organization' } | { __typename?: 'PullRequest' } | { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, forkCount: number, stargazerCount: number, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string }, pullRequests: { __typename?: 'PullRequestConnection', totalCount: number }, issues: { __typename?: 'IssueConnection', totalCount: number }, mentionableUsers: { __typename?: 'UserConnection', totalCount: number }, watchers: { __typename?: 'UserConnection', totalCount: number } } | { __typename?: 'User' } | null> | null } };
+export type FocusProjectCandidateSearchQuery = { __typename?: 'Query', rateLimit?: { __typename?: 'RateLimit', cost: number, limit: number, nodeCount: number, remaining: number, resetAt: any, used: number } | null, search: { __typename?: 'SearchResultItemConnection', repositoryCount: number, pageInfo: { __typename?: 'PageInfo', startCursor?: string | null, hasNextPage: boolean, endCursor?: string | null }, nodes?: Array<{ __typename?: 'App' } | { __typename?: 'Discussion' } | { __typename?: 'Issue' } | { __typename?: 'MarketplaceListing' } | { __typename?: 'Organization' } | { __typename?: 'PullRequest' } | { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, forkCount: number, stargazerCount: number, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string }, pullRequests: { __typename?: 'PullRequestConnection', totalCount: number }, issues: { __typename?: 'IssueConnection', totalCount: number }, mentionableUsers: { __typename?: 'UserConnection', totalCount: number }, watchers: { __typename?: 'UserConnection', totalCount: number } } | { __typename?: 'User' } | null> | null } };
 
 export type RepositorySummaryFragment = { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, forkCount: number, stargazerCount: number, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string }, pullRequests: { __typename?: 'PullRequestConnection', totalCount: number }, issues: { __typename?: 'IssueConnection', totalCount: number }, mentionableUsers: { __typename?: 'UserConnection', totalCount: number }, watchers: { __typename?: 'UserConnection', totalCount: number } };
 
@@ -6877,8 +6877,8 @@ export const RepositorySummary = gql`
   }
 }
     `;
-export const RepositorySearch = gql`
-    query RepositorySearch($searchString: String!, $first: Int!, $after: String) {
+export const FocusProjectCandidateSearch = gql`
+    query FocusProjectCandidateSearch($searchString: String!, $first: Int!, $after: String) {
   rateLimit {
     cost
     limit

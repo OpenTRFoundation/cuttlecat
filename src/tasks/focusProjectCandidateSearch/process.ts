@@ -1,6 +1,6 @@
 import {graphql} from "@octokit/graphql";
 import {v4 as uuidv4} from 'uuid';
-import {RepositorySearchQuery} from "../../generated/queries";
+import {FocusProjectCandidateSearchQuery} from "../../generated/queries";
 import {bool, cleanEnv, num, str} from 'envalid'
 import {createWriteStream, readFileSync, writeFileSync} from 'fs'
 
@@ -14,7 +14,7 @@ import fetch from "node-fetch";
 
 export class Process {
     private readonly processState:ProcessState;
-    private readonly taskQueue:TaskQueue<RepositorySearchQuery, TaskOptions>;
+    private readonly taskQueue:TaskQueue<FocusProjectCandidateSearchQuery, TaskOptions>;
     private readonly graphqlFn:typeof graphql;
     private readonly currentRunOutput:FileOutput[];
     private readonly options:{
@@ -22,7 +22,7 @@ export class Process {
         rateLimitStopPercent:number,
     };
 
-    constructor(processState:ProcessState, taskQueue:TaskQueue<RepositorySearchQuery, TaskOptions>, graphqlFn:typeof graphql, currentRunOutput:FileOutput[], options:{
+    constructor(processState:ProcessState, taskQueue:TaskQueue<FocusProjectCandidateSearchQuery, TaskOptions>, graphqlFn:typeof graphql, currentRunOutput:FileOutput[], options:{
         retryCount:number;
         rateLimitStopPercent:number
     }) {
@@ -303,7 +303,7 @@ function saveProcessRunOutput(fileSystem:FileSystem, stateFile:string, processSt
     outputStream.end();
 }
 
-function reportTaskQueue(taskQueue:TaskQueue<RepositorySearchQuery, TaskOptions>, processState:ProcessState) {
+function reportTaskQueue(taskQueue:TaskQueue<FocusProjectCandidateSearchQuery, TaskOptions>, processState:ProcessState) {
     let queueState = taskQueue.getState();
     console.log(`---- Task queue state: ${JSON.stringify(queueState)}`);
     console.log(`---- Task store      : unresolved: ${Object.keys(processState.unresolved).length}, resolved: ${Object.keys(processState.resolved).length}, errored: ${Object.keys(processState.errored).length}, archived: ${Object.keys(processState.archived).length}`);
@@ -384,7 +384,7 @@ export async function main() {
         archived: processState.archived,
     };
 
-    const taskQueue = new TaskQueue<RepositorySearchQuery, TaskOptions>(
+    const taskQueue = new TaskQueue<FocusProjectCandidateSearchQuery, TaskOptions>(
         taskStore,
         {
             concurrency: processConfig.CONCURRENCY,

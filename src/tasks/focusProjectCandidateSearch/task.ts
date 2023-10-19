@@ -1,12 +1,12 @@
 import {graphql} from "@octokit/graphql";
 import {v4 as uuidv4} from "uuid";
 import {BaseTask} from "../../taskqueue";
-import {RepositorySearch, RepositorySearchQuery, RepositorySummaryFragment} from "../../generated/queries";
+import {FocusProjectCandidateSearch, FocusProjectCandidateSearchQuery, RepositorySummaryFragment} from "../../generated/queries";
 import {FileOutput, TaskOptions} from "./types";
 import {formatDate, parseDate, splitPeriodIntoHalves} from "../../utils";
 
-export class Task extends BaseTask<RepositorySearchQuery, TaskOptions> {
-    private readonly graphqlWithAuth:typeof graphql<RepositorySearchQuery>;
+export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions> {
+    private readonly graphqlWithAuth:typeof graphql<FocusProjectCandidateSearchQuery>;
     private readonly rateLimitStopPercent:number;
     private readonly currentRunOutput:FileOutput[];
     private readonly options:TaskOptions;
@@ -32,7 +32,7 @@ export class Task extends BaseTask<RepositorySearchQuery, TaskOptions> {
         this.options.originatingTaskId = id;
     }
 
-    async execute(signal:AbortSignal):Promise<RepositorySearchQuery> {
+    async execute(signal:AbortSignal):Promise<FocusProjectCandidateSearchQuery> {
         console.log("Executing task: ", this.getId());
         if (signal.aborted) {
             // Should never reach here
@@ -49,7 +49,7 @@ export class Task extends BaseTask<RepositorySearchQuery, TaskOptions> {
 
         try {
             return await graphqlWithSignal(
-                RepositorySearch.loc!.source.body,
+                FocusProjectCandidateSearch.loc!.source.body,
                 this.buildQueryParameters()
             );
         } catch (e) {
@@ -76,7 +76,7 @@ export class Task extends BaseTask<RepositorySearchQuery, TaskOptions> {
         };
     }
 
-    nextTask(output:RepositorySearchQuery):Task | null {
+    nextTask(output:FocusProjectCandidateSearchQuery):Task | null {
         if (output.search.pageInfo.hasNextPage) {
             console.log(`Next page available for task: ${this.getId()}`);
             return new Task(
@@ -156,7 +156,7 @@ export class Task extends BaseTask<RepositorySearchQuery, TaskOptions> {
         return this.options;
     }
 
-    saveOutput(output:RepositorySearchQuery):void {
+    saveOutput(output:FocusProjectCandidateSearchQuery):void {
         console.log(`Saving output of the task: ${this.getId()}`);
 
         let nodes = output.search.nodes;
@@ -180,7 +180,7 @@ export class Task extends BaseTask<RepositorySearchQuery, TaskOptions> {
         }
     }
 
-    shouldAbort(output:RepositorySearchQuery):boolean {
+    shouldAbort(output:FocusProjectCandidateSearchQuery):boolean {
         const taskId = this.getId();
 
         console.log(`Rate limit information after task the execution of ${taskId}: ${JSON.stringify(output.rateLimit)}`);
@@ -259,9 +259,9 @@ export class Task extends BaseTask<RepositorySearchQuery, TaskOptions> {
         return !error.headers || !error.data;
     }
 
-    extractOutputFromError(error:any):RepositorySearchQuery {
+    extractOutputFromError(error:any):FocusProjectCandidateSearchQuery {
         if (error.data) {
-            return <RepositorySearchQuery>error.data;
+            return <FocusProjectCandidateSearchQuery>error.data;
         }
         // this should never happen as `shouldRecordAsError` should've returned true in that case already
         throw new Error("Invalid error object. Can't extract output from error.");
@@ -269,7 +269,7 @@ export class Task extends BaseTask<RepositorySearchQuery, TaskOptions> {
 
     getDebugInstructions():string {
         const instructions = {
-            "query": RepositorySearch.loc!.source.body,
+            "query": FocusProjectCandidateSearch.loc!.source.body,
             "variables": this.buildQueryParameters(),
         };
 

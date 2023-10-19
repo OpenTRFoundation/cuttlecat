@@ -1,7 +1,7 @@
 import nock from "nock";
 import {graphql} from "@octokit/graphql";
 import {FileOutput, ProcessState, TaskOptions} from "./types";
-import {RepositorySearchQuery} from "../../generated/queries";
+import {FocusProjectCandidateSearchQuery} from "../../generated/queries";
 import {Process} from "./process";
 import {TaskQueue} from "../../taskqueue";
 import fetch from "node-fetch";
@@ -229,7 +229,7 @@ describe('focusProjectCandidateSearch mock test', () => {
                 archived: processState.archived,
             };
 
-            const taskQueue = new TaskQueue<RepositorySearchQuery, TaskOptions>(
+            const taskQueue = new TaskQueue<FocusProjectCandidateSearchQuery, TaskOptions>(
                 taskStore,
                 {
                     concurrency: 4,
