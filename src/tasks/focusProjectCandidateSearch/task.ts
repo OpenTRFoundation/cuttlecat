@@ -69,10 +69,10 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
     private buildQueryParameters() {
         const searchString =
             "is:public template:false archived:false " +
-            `stars:>${this.options.minStars} ` +
-            `forks:>${this.options.minForks} ` +
-            `size:>${this.options.minSizeInKb} ` +
-            `pushed:>${this.options.hasActivityAfter} ` +
+            `stars:>=${this.options.minStars} ` +
+            `forks:>=${this.options.minForks} ` +
+            `size:>=${this.options.minSizeInKb} ` +
+            `pushed:>=${this.options.hasActivityAfter} ` +
             // both ends are inclusive
             `created:${this.options.createdAfter}..${this.options.createdBefore}`;
 

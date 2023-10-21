@@ -210,7 +210,7 @@ export function getFileSystem(dataDirectory:string) {
 }
 
 export async function start(mainArgs:Arguments, config:Config) {
-    logger.info("Starting focus project candidate search");
+    logger.info(`Starting ${commandName}...`);
     const processConfig = extractProcessConfig(config);
     const newQueueConfig = extractNewQueueConfig(config);
     // store the output of current run as an array of objects

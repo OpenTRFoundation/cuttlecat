@@ -48,7 +48,7 @@ describe('focusProjectCandidateSearch Task', () => {
             expect(response).to.be.equal(output);
             expect(executedQuery).to.be.equal(FocusProjectCandidateSearch.loc!.source.body);
             expect(passedVariables).to.be.deep.equal({
-                "searchString": "is:public template:false archived:false stars:>5 forks:>5 size:>5 pushed:>2023-01-01 created:2023-01-01..2023-01-01",
+                "searchString": "is:public template:false archived:false stars:>=5 forks:>=5 size:>=5 pushed:>=2023-01-01 created:2023-01-01..2023-01-01",
                 "first": 5,
                 "after": "start",
             });
