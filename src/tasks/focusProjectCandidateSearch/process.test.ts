@@ -1,7 +1,13 @@
 import {createNewProcessState} from "./process";
-import {QueueConfig, TaskOptions} from "./types";
+import {TaskOptions} from "./types";
 import {formatDate, parseDate} from "../../utils";
 import {expect} from "chai";
+import {QueueConfig} from "./config";
+import * as log from "../../log";
+
+// disable logging for tests
+log.setLevel("warn");
+
 
 function fakeNow():Date {
     return parseDate("2023-01-31");
@@ -17,14 +23,14 @@ describe('focusProjectCandidateSearch unit test', () => {
     describe('#createNewProcessState()', function () {
         it('should create new process state, 1 day range, 1 day interval', function () {
             const config:QueueConfig = {
-                MIN_STARS: 1,
-                MIN_FORKS: 1,
-                MIN_SIZE_IN_KB: 1,
-                MAX_INACTIVITY_DAYS: 1,
-                EXCLUDE_PROJECTS_CREATED_BEFORE: "2023-01-30",
-                MIN_AGE_IN_DAYS: 1,    // 2023-01-30
-                SEARCH_PERIOD_IN_DAYS: 1,
-                PAGE_SIZE: 1,
+                minStars: 1,
+                minForks: 1,
+                minSizeInKb: 1,
+                maxInactivityDays: 1,
+                excludeRepositoriesCreatedBefore: "2023-01-30",
+                minAgeInDays: 1,    // 2023-01-30
+                searchPeriodInDays: 1,
+                pageSize: 1,
             };
             const state = createNewProcessState(config, "foo.json", fakeNow);
             expect(state.errored).to.be.empty;
@@ -44,11 +50,11 @@ describe('focusProjectCandidateSearch unit test', () => {
             expect(task.parentId).to.be.null;
             expect(task.originatingTaskId).to.be.null;
             // depends on input
-            expect(task.minStars).to.be.equal(config.MIN_STARS);
-            expect(task.minForks).to.be.equal(config.MIN_FORKS);
-            expect(task.minSizeInKb).to.be.equal(config.MIN_SIZE_IN_KB);
+            expect(task.minStars).to.be.equal(config.minStars);
+            expect(task.minForks).to.be.equal(config.minForks);
+            expect(task.minSizeInKb).to.be.equal(config.minSizeInKb);
             expect(task.startCursor).to.be.null;
-            expect(task.pageSize).to.be.equal(config.PAGE_SIZE);
+            expect(task.pageSize).to.be.equal(config.pageSize);
             // built from input
             expect(task.hasActivityAfter).to.be.equal("2023-01-30");
             expect(task.createdAfter).to.be.equal("2023-01-30");
@@ -56,14 +62,14 @@ describe('focusProjectCandidateSearch unit test', () => {
         });
         it('should create new process state, 2 day range, 2 day interval', function () {
             const config:QueueConfig = {
-                MIN_STARS: 1,
-                MIN_FORKS: 1,
-                MIN_SIZE_IN_KB: 1,
-                MAX_INACTIVITY_DAYS: 1,
-                EXCLUDE_PROJECTS_CREATED_BEFORE: "2023-01-29",
-                MIN_AGE_IN_DAYS: 1,    // 2023-01-30
-                SEARCH_PERIOD_IN_DAYS: 2,
-                PAGE_SIZE: 1,
+                minStars: 1,
+                minForks: 1,
+                minSizeInKb: 1,
+                maxInactivityDays: 1,
+                excludeRepositoriesCreatedBefore: "2023-01-29",
+                minAgeInDays: 1,    // 2023-01-30
+                searchPeriodInDays: 2,
+                pageSize: 1,
             };
             const state = createNewProcessState(config, "foo.json", fakeNow);
             expect(Object.keys(state.unresolved)).to.have.lengthOf(1);
@@ -75,14 +81,14 @@ describe('focusProjectCandidateSearch unit test', () => {
         });
         it('should create new process state, 2 day range, 1 day interval', function () {
             const config:QueueConfig = {
-                MIN_STARS: 1,
-                MIN_FORKS: 1,
-                MIN_SIZE_IN_KB: 1,
-                MAX_INACTIVITY_DAYS: 1,
-                EXCLUDE_PROJECTS_CREATED_BEFORE: "2023-01-29",
-                MIN_AGE_IN_DAYS: 1,    // 2023-01-30
-                SEARCH_PERIOD_IN_DAYS: 1,
-                PAGE_SIZE: 1,
+                minStars: 1,
+                minForks: 1,
+                minSizeInKb: 1,
+                maxInactivityDays: 1,
+                excludeRepositoriesCreatedBefore: "2023-01-29",
+                minAgeInDays: 1,    // 2023-01-30
+                searchPeriodInDays: 1,
+                pageSize: 1,
             };
             const state = createNewProcessState(config, "foo.json", fakeNow);
             expect(Object.keys(state.unresolved)).to.have.lengthOf(2);
@@ -102,14 +108,14 @@ describe('focusProjectCandidateSearch unit test', () => {
         });
         it('should create new process state, 30 day range, 5 day interval', function () {
             const config:QueueConfig = {
-                MIN_STARS: 1,
-                MIN_FORKS: 1,
-                MIN_SIZE_IN_KB: 1,
-                MAX_INACTIVITY_DAYS: 1,
-                EXCLUDE_PROJECTS_CREATED_BEFORE: "2023-01-01",
-                MIN_AGE_IN_DAYS: 1,    // 2023-01-30
-                SEARCH_PERIOD_IN_DAYS: 5,
-                PAGE_SIZE: 1,
+                minStars: 1,
+                minForks: 1,
+                minSizeInKb: 1,
+                maxInactivityDays: 1,
+                excludeRepositoriesCreatedBefore: "2023-01-01",
+                minAgeInDays: 1,    // 2023-01-30
+                searchPeriodInDays: 5,
+                pageSize: 1,
             };
             const state = createNewProcessState(config, "foo.json", fakeNow);
             expect(Object.keys(state.unresolved)).to.have.lengthOf(6);
@@ -129,14 +135,14 @@ describe('focusProjectCandidateSearch unit test', () => {
         });
         it('should create new process state, 10 day range, 7 day interval', function () {
             const config:QueueConfig = {
-                MIN_STARS: 1,
-                MIN_FORKS: 1,
-                MIN_SIZE_IN_KB: 1,
-                MAX_INACTIVITY_DAYS: 1,
-                EXCLUDE_PROJECTS_CREATED_BEFORE: "2023-01-21",
-                MIN_AGE_IN_DAYS: 1,    // 2023-01-30
-                SEARCH_PERIOD_IN_DAYS: 7,
-                PAGE_SIZE: 1,
+                minStars: 1,
+                minForks: 1,
+                minSizeInKb: 1,
+                maxInactivityDays: 1,
+                excludeRepositoriesCreatedBefore: "2023-01-21",
+                minAgeInDays: 1,    // 2023-01-30
+                searchPeriodInDays: 7,
+                pageSize: 1,
             };
             const state = createNewProcessState(config, "foo.json", fakeNow);
             expect(Object.keys(state.unresolved)).to.have.lengthOf(2);

@@ -8,6 +8,12 @@ import fetch from "node-fetch";
 import {join} from "path";
 import assert from "assert";
 import loadDynamicImports from "../../dynamic-imports";
+import {QueueConfig} from "./config";
+
+import * as log from "../../log";
+
+// disable logging for tests
+log.setLevel("error");
 
 const nockBack = nock.back;
 
@@ -194,15 +200,15 @@ describe('focusProjectCandidateSearch mock test', () => {
 
             // doesn't really matter, as we're not gonna create any new queues
             // and we're not gonna save the starting config
-            const startingConfig = {
-                MIN_STARS: 0,
-                MIN_FORKS: 0,
-                MIN_SIZE_IN_KB: 0,
-                MAX_INACTIVITY_DAYS: 0,
-                EXCLUDE_PROJECTS_CREATED_BEFORE: "",
-                MIN_AGE_IN_DAYS: 0,
-                SEARCH_PERIOD_IN_DAYS: 0,
-                PAGE_SIZE: 0,
+            const startingConfig:QueueConfig = {
+                minStars: 0,
+                minForks: 0,
+                minSizeInKb: 0,
+                maxInactivityDays: 0,
+                excludeRepositoriesCreatedBefore: "",
+                minAgeInDays: 0,
+                searchPeriodInDays: 0,
+                pageSize: 0,
             };
 
             let unresolved:{ [key:string]:TaskOptions } = {};

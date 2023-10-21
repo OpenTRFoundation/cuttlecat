@@ -1,4 +1,4 @@
-import {bool, cleanEnv, str} from 'envalid'
+import {buildArguments} from "./arguments";
 import loadDynamicImports from "./dynamic-imports";
 import nock from "nock";
 import {join} from "path";
@@ -6,42 +6,45 @@ import {nowTimestamp} from "./utils";
 import * as log from "./log";
 
 import {cwd} from 'process';
+import {SubCommand} from "./subcommand";
 
-async function initializeDynamicImports() {
-    await loadDynamicImports();
+const subCommandPaths = [
+    './tasks/focusProjectCandidateSearch/process.js',
+    './tasks/focusProjectCandidateSearch/printLatestFileComplete.js',
+];
+
+function buildCommands(subCommands:string[]) {
+    const commands:{ [key:string]:SubCommand } = {};
+
+    for (let subCommand of subCommands) {
+        const module = require(subCommand);
+        if (!module.commandName) {
+            throw new Error(`Module ${subCommand} must export a commandName`);
+        }
+        if (!module.commandDescription) {
+            throw new Error(`Module ${subCommand} must export a commandDescription`);
+        }
+        if (!module.main) {
+            throw new Error(`Module ${subCommand} must export a main function`);
+        }
+
+        commands[module.commandName] = {
+            commandName: module.commandName,
+            commandDescription: module.commandDescription,
+            main: module.main,
+        };
+    }
+    return commands;
 }
 
-async function focusProjectCandidateSearch() {
-    await initializeDynamicImports();
-
-    await (await import("./tasks/focusProjectCandidateSearch/process.js")).main();
-}
-
-async function printIsLatestFileComplete() {
-    await initializeDynamicImports();
-
-    (await import("./tasks/focusProjectCandidateSearch/process.js")).printIsLatestFileComplete();
-}
-
-function buildConfigFromEnvVars() {
-    return cleanEnv(process.env, {
-        PROCESS: str({
-            desc: "Process to run. One of these: [FOCUS_PROJECT_CANDIDATE_SEARCH]",
-        }),
-        RECORD_HTTP_CALLS: bool({
-            desc: "Record HTTP calls to disk for debugging purposes.",
-            default: false,
-        }),
-        LOG_LEVEL: str({
-            desc: "Enable debug logging.",
-            default: "info",
-        }),
-    });
-}
 
 async function main() {
-    const config = buildConfigFromEnvVars();
-    log.setLevel(config.LOG_LEVEL);
+    await loadDynamicImports();
+
+    const subCommands = buildCommands(subCommandPaths);
+    const args = buildArguments(subCommands);
+
+    log.setLevel(args.logLevel);
 
     let logger = log.createLogger("index");
 
@@ -53,7 +56,7 @@ async function main() {
     process.setMaxListeners(0);
 
     let doNockDone;
-    if (config.RECORD_HTTP_CALLS) {
+    if (args.recordHttpCalls) {
         logger.info("Recording HTTP calls to disk for debugging purposes.");
         const nockBack = nock.back;
 
@@ -62,20 +65,11 @@ async function main() {
         nockBack.fixtures = fixturesDirectory;
         nockBack.setMode('record');
 
-        const {nockDone} = await nockBack(`${config.PROCESS}_${nowTimestamp()}.json`);
+        const {nockDone} = await nockBack(`${args.command}_${nowTimestamp()}.json`);
         doNockDone = nockDone;
     }
 
-    switch (config.PROCESS) {
-        case "FOCUS_PROJECT_CANDIDATE_SEARCH":
-            await focusProjectCandidateSearch();
-            break;
-        case "FOCUS_PROJECT_CANDIDATE_SEARCH_LATEST_FILE_COMPLETE":
-            await printIsLatestFileComplete();
-            break;
-        default:
-            throw new Error(`Unknown process: ${config.PROCESS}`);
-    }
+    await subCommands[args.command].main(args);
 
     if (doNockDone) {
         logger.info("Waiting for nock to finish recording HTTP calls to disk.");
