@@ -1,0 +1,130 @@
+query UserAndContribSearch($searchString: String!, $first: Int!, $after:String, $contribFrom: DateTime!, $contribTo: DateTime!){
+    rateLimit {
+        cost
+        limit
+        nodeCount
+        remaining
+        resetAt
+        used
+    }
+    search(type: USER, query:$searchString, first:$first, after:$after) {
+        pageInfo {
+            startCursor
+            hasNextPage
+            endCursor
+        }
+        userCount
+        nodes {
+            ... on User {
+                ...UserSearchResult
+            }
+        }
+    }
+}
+
+fragment UserSearchResult on User {
+    login
+    company
+    name
+    createdAt
+    email
+    followers {
+        totalCount
+    }
+    gists {
+        totalCount
+    }
+    issueComments {
+        totalCount
+    }
+    issues {
+        totalCount
+    }
+    location
+    pullRequests {
+        totalCount
+    }
+    repositories {
+        totalCount
+    }
+    repositoriesContributedTo {
+        totalCount
+    }
+    repositoryDiscussionComments {
+        totalCount
+    }
+    repositoryDiscussions {
+        totalCount
+    }
+    socialAccounts(first: 100) {
+        edges {
+            node {
+                ... on SocialAccount {
+                    displayName
+                    provider
+                    url
+                }
+            }
+        }
+    }
+    sponsoring {
+        totalCount
+    }
+    sponsors {
+        totalCount
+    }
+    twitterUsername
+    websiteUrl
+    contributionsCollection(from: $contribFrom, to: $contribTo) {
+        startedAt
+        endedAt
+        totalIssueContributions
+        totalCommitContributions
+        totalPullRequestContributions
+        totalPullRequestReviewContributions
+        totalRepositoriesWithContributedIssues
+        totalRepositoriesWithContributedCommits
+        totalRepositoriesWithContributedPullRequests
+        totalRepositoriesWithContributedPullRequestReviews
+        issueContributionsByRepository(maxRepositories: 100) {
+            contributions{
+                totalCount
+            }
+            repository {
+                ...UserSearchRepositoryId
+            }
+        }
+        commitContributionsByRepository(maxRepositories: 100) {
+            contributions{
+                totalCount
+            }
+            repository {
+                ...UserSearchRepositoryId
+            }
+        }
+        pullRequestContributionsByRepository(maxRepositories: 100) {
+            contributions{
+                totalCount
+            }
+            repository {
+                ...UserSearchRepositoryId
+            }
+        }
+        pullRequestReviewContributionsByRepository(maxRepositories: 100) {
+            contributions{
+                totalCount
+            }
+            repository {
+                ...UserSearchRepositoryId
+            }
+        }
+    }
+}
+
+fragment UserSearchRepositoryId on Repository {
+    nameWithOwner
+    isInOrganization
+    owner {
+        login
+    }
+}

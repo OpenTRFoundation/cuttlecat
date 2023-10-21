@@ -11,22 +11,11 @@ async function initializeDynamicImports() {
     await loadDynamicImports();
 }
 
-async function focusProjectCandidateSearch() {
-    await initializeDynamicImports();
-
-    await (await import("./tasks/focusProjectCandidateSearch/process.js")).main();
-}
-
-async function printIsLatestFileComplete() {
-    await initializeDynamicImports();
-
-    (await import("./tasks/focusProjectCandidateSearch/process.js")).printIsLatestFileComplete();
-}
-
 function buildConfigFromEnvVars() {
     return cleanEnv(process.env, {
         PROCESS: str({
-            desc: "Process to run. One of these: [FOCUS_PROJECT_CANDIDATE_SEARCH]",
+            // TODO: need some dynamic way to get this list
+            desc: "Process to run. One of these: [FOCUS_PROJECT_CANDIDATE_SEARCH, FOCUS_PROJECT_CANDIDATE_SEARCH_LATEST_FILE_COMPLETE, GENERATE_LOCATIONS, USER_COUNT_SEARCH]",
         }),
         RECORD_HTTP_CALLS: bool({
             desc: "Record HTTP calls to disk for debugging purposes.",
@@ -66,12 +55,20 @@ async function main() {
         doNockDone = nockDone;
     }
 
+    await initializeDynamicImports();
+
     switch (config.PROCESS) {
         case "FOCUS_PROJECT_CANDIDATE_SEARCH":
-            await focusProjectCandidateSearch();
+            await (await import("./tasks/focusProjectCandidateSearch/process.js")).main();
             break;
         case "FOCUS_PROJECT_CANDIDATE_SEARCH_LATEST_FILE_COMPLETE":
-            await printIsLatestFileComplete();
+            (await import("./tasks/focusProjectCandidateSearch/process.js")).printIsLatestFileComplete();
+            break;
+        case "GENERATE_LOCATIONS":
+            (await import("./tasks/locationGeneration/generate.js")).main();
+            break;
+        case "USER_COUNT_SEARCH":
+            await (await import("./tasks/userCountSearch/process.js")).main();
             break;
         default:
             throw new Error(`Unknown process: ${config.PROCESS}`);

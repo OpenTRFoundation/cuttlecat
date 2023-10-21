@@ -6854,6 +6854,28 @@ export type FocusProjectCandidateSearchQuery = { __typename?: 'Query', rateLimit
 
 export type RepositorySummaryFragment = { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, forkCount: number, stargazerCount: number, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string }, pullRequests: { __typename?: 'PullRequestConnection', totalCount: number }, issues: { __typename?: 'IssueConnection', totalCount: number }, mentionableUsers: { __typename?: 'UserConnection', totalCount: number }, watchers: { __typename?: 'UserConnection', totalCount: number } };
 
+export type UserAndContribSearchQueryVariables = Exact<{
+  searchString: Scalars['String']['input'];
+  first: Scalars['Int']['input'];
+  after?: InputMaybe<Scalars['String']['input']>;
+  contribFrom: Scalars['DateTime']['input'];
+  contribTo: Scalars['DateTime']['input'];
+}>;
+
+
+export type UserAndContribSearchQuery = { __typename?: 'Query', rateLimit?: { __typename?: 'RateLimit', cost: number, limit: number, nodeCount: number, remaining: number, resetAt: any, used: number } | null, search: { __typename?: 'SearchResultItemConnection', userCount: number, pageInfo: { __typename?: 'PageInfo', startCursor?: string | null, hasNextPage: boolean, endCursor?: string | null }, nodes?: Array<{ __typename?: 'App' } | { __typename?: 'Discussion' } | { __typename?: 'Issue' } | { __typename?: 'MarketplaceListing' } | { __typename?: 'Organization' } | { __typename?: 'PullRequest' } | { __typename?: 'Repository' } | { __typename?: 'User', login: string, company?: string | null, name?: string | null, createdAt: any, email: string, location?: string | null, twitterUsername?: string | null, websiteUrl?: any | null, followers: { __typename?: 'FollowerConnection', totalCount: number }, gists: { __typename?: 'GistConnection', totalCount: number }, issueComments: { __typename?: 'IssueCommentConnection', totalCount: number }, issues: { __typename?: 'IssueConnection', totalCount: number }, pullRequests: { __typename?: 'PullRequestConnection', totalCount: number }, repositories: { __typename?: 'RepositoryConnection', totalCount: number }, repositoriesContributedTo: { __typename?: 'RepositoryConnection', totalCount: number }, repositoryDiscussionComments: { __typename?: 'DiscussionCommentConnection', totalCount: number }, repositoryDiscussions: { __typename?: 'DiscussionConnection', totalCount: number }, socialAccounts: { __typename?: 'SocialAccountConnection', edges?: Array<{ __typename?: 'SocialAccountEdge', node?: { __typename?: 'SocialAccount', displayName: string, provider: SocialAccountProvider, url: any } | null } | null> | null }, sponsoring: { __typename?: 'SponsorConnection', totalCount: number }, sponsors: { __typename?: 'SponsorConnection', totalCount: number }, contributionsCollection: { __typename?: 'ContributionsCollection', startedAt: any, endedAt: any, totalIssueContributions: number, totalCommitContributions: number, totalPullRequestContributions: number, totalPullRequestReviewContributions: number, totalRepositoriesWithContributedIssues: number, totalRepositoriesWithContributedCommits: number, totalRepositoriesWithContributedPullRequests: number, totalRepositoriesWithContributedPullRequestReviews: number, issueContributionsByRepository: Array<{ __typename?: 'IssueContributionsByRepository', contributions: { __typename?: 'CreatedIssueContributionConnection', totalCount: number }, repository: { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string } } }>, commitContributionsByRepository: Array<{ __typename?: 'CommitContributionsByRepository', contributions: { __typename?: 'CreatedCommitContributionConnection', totalCount: number }, repository: { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string } } }>, pullRequestContributionsByRepository: Array<{ __typename?: 'PullRequestContributionsByRepository', contributions: { __typename?: 'CreatedPullRequestContributionConnection', totalCount: number }, repository: { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string } } }>, pullRequestReviewContributionsByRepository: Array<{ __typename?: 'PullRequestReviewContributionsByRepository', contributions: { __typename?: 'CreatedPullRequestReviewContributionConnection', totalCount: number }, repository: { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string } } }> } } | null> | null } };
+
+export type UserSearchResultFragment = { __typename?: 'User', login: string, company?: string | null, name?: string | null, createdAt: any, email: string, location?: string | null, twitterUsername?: string | null, websiteUrl?: any | null, followers: { __typename?: 'FollowerConnection', totalCount: number }, gists: { __typename?: 'GistConnection', totalCount: number }, issueComments: { __typename?: 'IssueCommentConnection', totalCount: number }, issues: { __typename?: 'IssueConnection', totalCount: number }, pullRequests: { __typename?: 'PullRequestConnection', totalCount: number }, repositories: { __typename?: 'RepositoryConnection', totalCount: number }, repositoriesContributedTo: { __typename?: 'RepositoryConnection', totalCount: number }, repositoryDiscussionComments: { __typename?: 'DiscussionCommentConnection', totalCount: number }, repositoryDiscussions: { __typename?: 'DiscussionConnection', totalCount: number }, socialAccounts: { __typename?: 'SocialAccountConnection', edges?: Array<{ __typename?: 'SocialAccountEdge', node?: { __typename?: 'SocialAccount', displayName: string, provider: SocialAccountProvider, url: any } | null } | null> | null }, sponsoring: { __typename?: 'SponsorConnection', totalCount: number }, sponsors: { __typename?: 'SponsorConnection', totalCount: number }, contributionsCollection: { __typename?: 'ContributionsCollection', startedAt: any, endedAt: any, totalIssueContributions: number, totalCommitContributions: number, totalPullRequestContributions: number, totalPullRequestReviewContributions: number, totalRepositoriesWithContributedIssues: number, totalRepositoriesWithContributedCommits: number, totalRepositoriesWithContributedPullRequests: number, totalRepositoriesWithContributedPullRequestReviews: number, issueContributionsByRepository: Array<{ __typename?: 'IssueContributionsByRepository', contributions: { __typename?: 'CreatedIssueContributionConnection', totalCount: number }, repository: { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string } } }>, commitContributionsByRepository: Array<{ __typename?: 'CommitContributionsByRepository', contributions: { __typename?: 'CreatedCommitContributionConnection', totalCount: number }, repository: { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string } } }>, pullRequestContributionsByRepository: Array<{ __typename?: 'PullRequestContributionsByRepository', contributions: { __typename?: 'CreatedPullRequestContributionConnection', totalCount: number }, repository: { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string } } }>, pullRequestReviewContributionsByRepository: Array<{ __typename?: 'PullRequestReviewContributionsByRepository', contributions: { __typename?: 'CreatedPullRequestReviewContributionConnection', totalCount: number }, repository: { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string } } }> } };
+
+export type UserSearchRepositoryIdFragment = { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string } };
+
+export type UserCountSearchQueryVariables = Exact<{
+  searchString: Scalars['String']['input'];
+}>;
+
+
+export type UserCountSearchQuery = { __typename?: 'Query', rateLimit?: { __typename?: 'RateLimit', cost: number, limit: number, nodeCount: number, remaining: number, resetAt: any, used: number } | null, search: { __typename?: 'SearchResultItemConnection', userCount: number } };
+
 export const RepositorySummary = gql`
     fragment RepositorySummary on Repository {
   nameWithOwner
@@ -6877,6 +6899,115 @@ export const RepositorySummary = gql`
   }
 }
     `;
+export const UserSearchRepositoryId = gql`
+    fragment UserSearchRepositoryId on Repository {
+  nameWithOwner
+  isInOrganization
+  owner {
+    login
+  }
+}
+    `;
+export const UserSearchResult = gql`
+    fragment UserSearchResult on User {
+  login
+  company
+  name
+  createdAt
+  email
+  followers {
+    totalCount
+  }
+  gists {
+    totalCount
+  }
+  issueComments {
+    totalCount
+  }
+  issues {
+    totalCount
+  }
+  location
+  pullRequests {
+    totalCount
+  }
+  repositories {
+    totalCount
+  }
+  repositoriesContributedTo {
+    totalCount
+  }
+  repositoryDiscussionComments {
+    totalCount
+  }
+  repositoryDiscussions {
+    totalCount
+  }
+  socialAccounts(first: 100) {
+    edges {
+      node {
+        ... on SocialAccount {
+          displayName
+          provider
+          url
+        }
+      }
+    }
+  }
+  sponsoring {
+    totalCount
+  }
+  sponsors {
+    totalCount
+  }
+  twitterUsername
+  websiteUrl
+  contributionsCollection(from: $contribFrom, to: $contribTo) {
+    startedAt
+    endedAt
+    totalIssueContributions
+    totalCommitContributions
+    totalPullRequestContributions
+    totalPullRequestReviewContributions
+    totalRepositoriesWithContributedIssues
+    totalRepositoriesWithContributedCommits
+    totalRepositoriesWithContributedPullRequests
+    totalRepositoriesWithContributedPullRequestReviews
+    issueContributionsByRepository(maxRepositories: 100) {
+      contributions {
+        totalCount
+      }
+      repository {
+        ...UserSearchRepositoryId
+      }
+    }
+    commitContributionsByRepository(maxRepositories: 100) {
+      contributions {
+        totalCount
+      }
+      repository {
+        ...UserSearchRepositoryId
+      }
+    }
+    pullRequestContributionsByRepository(maxRepositories: 100) {
+      contributions {
+        totalCount
+      }
+      repository {
+        ...UserSearchRepositoryId
+      }
+    }
+    pullRequestReviewContributionsByRepository(maxRepositories: 100) {
+      contributions {
+        totalCount
+      }
+      repository {
+        ...UserSearchRepositoryId
+      }
+    }
+  }
+}
+    ${UserSearchRepositoryId}`;
 export const FocusProjectCandidateSearch = gql`
     query FocusProjectCandidateSearch($searchString: String!, $first: Int!, $after: String) {
   rateLimit {
@@ -6900,3 +7031,43 @@ export const FocusProjectCandidateSearch = gql`
   }
 }
     ${RepositorySummary}`;
+export const UserAndContribSearch = gql`
+    query UserAndContribSearch($searchString: String!, $first: Int!, $after: String, $contribFrom: DateTime!, $contribTo: DateTime!) {
+  rateLimit {
+    cost
+    limit
+    nodeCount
+    remaining
+    resetAt
+    used
+  }
+  search(type: USER, query: $searchString, first: $first, after: $after) {
+    pageInfo {
+      startCursor
+      hasNextPage
+      endCursor
+    }
+    userCount
+    nodes {
+      ... on User {
+        ...UserSearchResult
+      }
+    }
+  }
+}
+    ${UserSearchResult}`;
+export const UserCountSearch = gql`
+    query UserCountSearch($searchString: String!) {
+  rateLimit {
+    cost
+    limit
+    nodeCount
+    remaining
+    resetAt
+    used
+  }
+  search(type: USER, query: $searchString, first: 1) {
+    userCount
+  }
+}
+    `;

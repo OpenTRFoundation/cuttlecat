@@ -1,19 +1,22 @@
 import {graphql} from "@octokit/graphql";
 import {v4 as uuidv4} from "uuid";
 import {BaseTask} from "../../taskqueue";
-import {
-    FocusProjectCandidateSearch,
-    FocusProjectCandidateSearchQuery,
-    RepositorySummaryFragment
-} from "../../generated/queries";
+import {UserAndContribSearch, UserAndContribSearchQuery, UserSearchResultFragment,} from "../../generated/queries";
 import {FileOutput, TaskOptions} from "./types";
 import {formatDate, parseDate, splitPeriodIntoHalves} from "../../utils";
 import {createLogger} from "../../log";
 
-const logger = createLogger("focusProjectCandidateSearch/task");
+const logger = createLogger("userAndContribSearch/task");
 
-export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions> {
-    private readonly graphqlWithAuth:typeof graphql<FocusProjectCandidateSearchQuery>;
+// TODO: lots of duplication
+// TODO: create a base GraphQL task class
+// TODO: make it generic with
+// TODO: - page info
+// TODO: - nodes
+// TODO: ...
+
+export class Task extends BaseTask<UserAndContribSearchQuery, TaskOptions> {
+    private readonly graphqlWithAuth:typeof graphql<UserAndContribSearchQuery>;
     private readonly rateLimitStopPercent:number;
     private readonly currentRunOutput:FileOutput[];
     private readonly options:TaskOptions;
@@ -39,7 +42,7 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
         this.options.originatingTaskId = id;
     }
 
-    async execute(signal:AbortSignal):Promise<FocusProjectCandidateSearchQuery> {
+    async execute(signal:AbortSignal):Promise<UserAndContribSearchQuery> {
         logger.debug(`Executing task: ${this.getId()}`);
         if (signal.aborted) {
             // Should never reach here
@@ -56,7 +59,7 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
 
         try {
             return await graphqlWithSignal(
-                FocusProjectCandidateSearch.loc!.source.body,
+                UserAndContribSearch.loc!.source.body,
                 this.buildQueryParameters()
             );
         } catch (e) {
@@ -68,22 +71,22 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
 
     private buildQueryParameters() {
         const searchString =
-            "is:public template:false archived:false " +
-            `stars:>=${this.options.minStars} ` +
-            `forks:>=${this.options.minForks} ` +
-            `size:>=${this.options.minSizeInKb} ` +
-            `pushed:>${this.options.hasActivityAfter} ` +
+            `location:${this.options.location} ` +
+            `repos:>=${this.options.minRepos} ` +
+            `followers:>=${this.options.minFollowers} ` +
             // both ends are inclusive
-            `created:${this.options.createdAfter}..${this.options.createdBefore}`;
+            `created:${this.options.signedUpAfter}..${this.options.signedUpBefore}`;
 
         return {
             "searchString": searchString,
             "first": this.options.pageSize,
             "after": this.options.startCursor,
+            "contribFrom": this.options.contribSearchStart,
+            "contribTo": this.options.contribSearchEnd,
         };
     }
 
-    nextTask(output:FocusProjectCandidateSearchQuery):Task | null {
+    nextTask(output:UserAndContribSearchQuery):Task | null {
         if (output.search.pageInfo.hasNextPage) {
             logger.debug(`Next page available for task: ${this.getId()}`);
             return new Task(
@@ -94,14 +97,18 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
                     id: uuidv4(),
                     parentId: null,
                     originatingTaskId: this.getId(),
-                    minStars: this.options.minStars,
-                    minForks: this.options.minForks,
-                    minSizeInKb: this.options.minSizeInKb,
-                    hasActivityAfter: this.options.hasActivityAfter,
-                    createdAfter: this.options.createdAfter,
-                    createdBefore: this.options.createdBefore,
+
+                    location: this.options.location,
+                    minRepos: this.options.minRepos,
+                    minFollowers: this.options.minFollowers,
+                    signedUpAfter: this.options.signedUpAfter,
+                    signedUpBefore: this.options.signedUpBefore,
+
                     pageSize: this.options.pageSize,
                     startCursor: <string>output.search.pageInfo.endCursor,
+
+                    contribSearchStart: this.options.contribSearchStart,
+                    contribSearchEnd: this.options.contribSearchEnd,
                 }
             );
         }
@@ -110,7 +117,7 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
     }
 
     narrowedDownTasks():Task[] | null {
-        // Project search can't narrow down the scopes of the tasks that start from a cursor.
+        // User search can't narrow down the scopes of the tasks that start from a cursor.
         // That's because:
         // - The cursor is bound to the date range previously used.
         // In that case, add narrowed down tasks for the originating task. That's the task that caused the creation of
@@ -123,8 +130,8 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
         }
 
         let newTasks:Task[] = [];
-        const startDate = parseDate(this.options.createdAfter);
-        const endDate = parseDate(this.options.createdBefore);
+        const startDate = parseDate(this.options.signedUpAfter);
+        const endDate = parseDate(this.options.signedUpBefore);
 
         const halfPeriods = splitPeriodIntoHalves(startDate, endDate);
         if (halfPeriods.length < 1) {
@@ -143,14 +150,18 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
                         id: uuidv4(),
                         parentId: this.getId(),
                         originatingTaskId: this.options.originatingTaskId,
-                        minStars: this.options.minStars,
-                        minForks: this.options.minForks,
-                        minSizeInKb: this.options.minSizeInKb,
-                        hasActivityAfter: this.options.hasActivityAfter,
-                        createdAfter: formatDate(halfPeriod.start),
-                        createdBefore: formatDate(halfPeriod.end),
+
+                        location: this.options.location,
+                        minRepos: this.options.minRepos,
+                        minFollowers: this.options.minFollowers,
+                        signedUpAfter: formatDate(halfPeriod.start),
+                        signedUpBefore: formatDate(halfPeriod.end),
+
                         pageSize: this.options.pageSize,
                         startCursor: null,
+
+                        contribSearchStart: this.options.contribSearchStart,
+                        contribSearchEnd: this.options.contribSearchEnd,
                     }
                 )
             );
@@ -163,7 +174,7 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
         return this.options;
     }
 
-    saveOutput(output:FocusProjectCandidateSearchQuery):void {
+    saveOutput(output:UserAndContribSearchQuery):void {
         logger.debug(`Saving output of the task: ${this.getId()}`);
 
         let nodes = output.search.nodes;
@@ -176,18 +187,18 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
         logger.debug(`Number of nodes found for ${this.getId()}: ${nodes.length}`);
 
         for (let i = 0; i < nodes.length; i++) {
-            const repoSummary = <RepositorySummaryFragment>nodes[i];
+            const userSearchResult = <UserSearchResultFragment>nodes[i];
             // items in the array might be null, in case of partial responses
-            if (repoSummary) {
+            if (userSearchResult) {
                 this.currentRunOutput.push({
                     taskId: this.getId(),
-                    result: repoSummary,
+                    result: userSearchResult,
                 });
             }
         }
     }
 
-    shouldAbort(output:FocusProjectCandidateSearchQuery):boolean {
+    shouldAbort(output:UserAndContribSearchQuery):boolean {
         const taskId = this.getId();
 
         logger.debug(`Rate limit information after task the execution of ${taskId}: ${JSON.stringify(output.rateLimit)}`);
@@ -266,9 +277,9 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
         return !error.headers || !error.data;
     }
 
-    extractOutputFromError(error:any):FocusProjectCandidateSearchQuery {
+    extractOutputFromError(error:any):UserAndContribSearchQuery {
         if (error.data) {
-            return <FocusProjectCandidateSearchQuery>error.data;
+            return <UserAndContribSearchQuery>error.data;
         }
         // this should never happen as `shouldRecordAsError` should've returned true in that case already
         throw new Error("Invalid error object. Can't extract output from error.");
@@ -276,7 +287,7 @@ export class Task extends BaseTask<FocusProjectCandidateSearchQuery, TaskOptions
 
     getDebugInstructions():string {
         const instructions = {
-            "query": FocusProjectCandidateSearch.loc!.source.body,
+            "query": UserAndContribSearch.loc!.source.body,
             "variables": this.buildQueryParameters(),
         };
 

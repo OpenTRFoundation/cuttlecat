@@ -170,3 +170,6 @@ gh run view 6565769484 --job=17835015583 --log > foo.txt
 ```
 
 Then manually copy paste some cases to the test fixtures.
+
+
+TODO: save errors in partial responses in the "resolved" task output
