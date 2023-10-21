@@ -1,19 +1,29 @@
 import {graphql} from "@octokit/graphql";
 import {v4 as uuidv4} from 'uuid';
 import {FocusProjectCandidateSearchQuery} from "../../generated/queries";
-import {bool, cleanEnv, num, str} from 'envalid'
 import {createWriteStream, readFileSync, writeFileSync} from 'fs'
 
 import {TaskQueue} from "../../taskqueue";
 import {addDays, daysInPeriod, formatDate, now as getNow, parseDate, subtractDays} from "../../utils";
 import FileSystem from "../../fileSystem";
 import {shuffle} from "lodash";
-import {FileOutput, ProcessState, QueueConfig, TaskOptions} from "./types";
+import {FileOutput, ProcessState, TaskOptions} from "./types";
 import {Task} from "./task";
 import fetch from "node-fetch";
 import {createLogger} from "../../log";
+import {Arguments} from "../../arguments";
+import {buildConfig, Config, extractNewQueueConfig, extractProcessConfig, QueueConfig} from "./config";
 
 const logger = createLogger("focusProjectCandidateSearch/process");
+
+export const commandName = "focus-project-candidate-search";
+export const commandDescription = "Search for repositories that can be used to identify focus organizations and projects.";
+
+export async function main(mainConfig:Arguments) {
+    const config:Config = buildConfig();
+    await start(mainConfig, config);
+}
+
 
 export class Process {
     private readonly processState:ProcessState;
@@ -80,133 +90,9 @@ export class Process {
     }
 }
 
-function buildProcessConfigFromEnvVars() {
-    return cleanEnv(process.env, {
-        GITHUB_TOKEN: str({
-            desc: "(not persisted in process file) GitHub API token. Token doesn't need any permissions."
-        }),
-        RECORD_HTTP_CALLS: bool({
-            desc: "Record HTTP calls to disk for debugging purposes.",
-            default: false,
-        }),
-        DATA_DIRECTORY: str({
-            desc: "(not persisted in process file) Data directory to read and store the output."
-        }),
-        RENEW_PERIOD_IN_DAYS: num({
-            default: 7,
-            desc: "(not persisted in process file) if previous queue is completed, create the next one after RENEW_PERIOD_IN_DAYS days"
-        }),
-
-        // As this search is IO bound and CPU bound, we can have many concurrent tasks (more than the number of cores).
-        // However, because of rate limiting, we will have a lot of idle tasks. So, let's not do that and keep the concurrency low.
-        CONCURRENCY: num({
-            default: 6,
-            desc: "number of concurrent tasks"
-        }),
-
-        // Keeping the timeout too long will end up using too many GitHub actions minutes.
-        // Keeping the timeout too short will result in too many errored items.
-        PER_TASK_TIMEOUT_IN_MS: num({
-            default: 30000,
-            desc: "timeout for each task"
-        }),
-
-        // About rate limits...
-        // ref1: https://docs.github.com/en/free-pro-team@latest/rest/search/search?apiVersion=2022-11-28#search-users
-        // ref2: https://docs.github.com/en/free-pro-team@latest/rest/search/search?apiVersion=2022-11-28#rate-limit
-        // ref3: https://docs.github.com/en/rest/overview/resources-in-the-rest-api?apiVersion=2022-11-28#rate-limits-for-requests-from-personal-accounts
-        // ref4: https://docs.github.com/en/rest/overview/resources-in-the-rest-api?apiVersion=2022-11-28#rate-limits-for-requests-from-github-actions
-        // Numbers:
-        // The REST API has a custom rate limit for searching. ... you can make up to 30 requests per minute
-        // User access token requests are limited to 5,000 requests per hour ...
-        // When using GITHUB_TOKEN, the rate limit is 1,000 requests per hour per repository.
-        //
-        // Bottleneck is search endpoint, which is limited to 30 requests per minute.
-        // And the worst part is, that it's not reported by the RateLimit object in GraphQL response.
-        // We only know when we reached the limit.
-        // The queue will abort when primary (1000 requests per hour) or secondary (30 requests per minute) rate limit is reached.
-        // So that we can retry later, instead of waiting and using the GitHub action minutes.
-        //
-        // Another note is that instead of using an interval of 60 seconds and a cap of 30, we should use shorter intervals and a lower cap.
-        // Otherwise, what happens is that queue will execute 30 tasks in ~10 seconds, and then wait for 50 seconds.
-        // That's a burst-y behavior, and we should avoid that.
-        // A good number to start with is 10 seconds and 5 tasks.
-        //
-        // Finally, let's leave some gap for the secondary rate limit.
-        // Instead of 10 seconds and 5 tasks, let's use 12 seconds and 4 tasks (means 20 reqs/sec).
-        //
-        // These numbers can be overridden by env vars.
-
-        RATE_LIMIT_STOP_PERCENT: num({
-            default: 10,
-            desc: "if rate limit remaining is less than RATE_LIMIT_STOP_PERCENT * rate limit (typically 1000) / 100, stop the queue."
-        }),
-        INTERVAL_CAP: num({
-            default: 4,
-            desc: "max number of tasks to execute in one interval"
-        }),
-        INTERVAL_IN_MS: num({
-            default: 20000,
-            desc: "interval for the cap in milliseconds"
-        }),
-
-
-        RETRY_COUNT: num({
-            default: 3,
-            desc: "number of retries for each task before giving up"
-        }),
-
-        REPORT_PERIOD_IN_MS: num({
-            default: 5000,
-            desc: "period to print the queue state (0 for disabled)"
-        }),
-    });
-}
-
-function buildNewQueueConfigFromEnvVars():QueueConfig {
-    return cleanEnv(process.env, {
-        // Project search query parameters (applies to new queues only)
-        MIN_STARS: num({
-            default: 50,
-            desc: "minimum number of stars (applies to new queues only)"
-        }),
-        MIN_FORKS: num({
-            default: 50,
-            desc: "minimum number of forks (applies to new queues only)"
-        }),
-        MIN_SIZE_IN_KB: num({
-            default: 1000,
-            desc: "minimum size in KB (applies to new queues only)"
-        }),
-        MAX_INACTIVITY_DAYS: num({
-            default: 90,
-            desc: "maximum number of days since last commit; ignore projects that have been inactive for longer than this (applies to new queues only)"
-        }),
-        EXCLUDE_PROJECTS_CREATED_BEFORE: str({
-            default: "2008-01-01",
-            desc: "ignore projects created before this date (format: YYYY-MM-DD) (applies to new queues only)"
-        }),
-        MIN_AGE_IN_DAYS: num({
-            default: 365,
-            desc: "ignore projects younger than this (applies to new queues only)"
-        }),
-
-        // Search batch size parameters (applies to new queues only)
-        SEARCH_PERIOD_IN_DAYS: num({
-            default: 5,
-            desc: "Number of days to search for projects in one call (applies to new queues only)"
-        }),
-        PAGE_SIZE: num({
-            default: 100,
-            desc: "Max number of projects to return in one batch (applies to new queues only)"
-        }),
-    });
-}
-
-
 export function createNewProcessState(startingConfig:QueueConfig, outputFileName:string, nowFn:() => Date):ProcessState {
-    let startDate = parseDate(startingConfig.EXCLUDE_PROJECTS_CREATED_BEFORE);
-    let endDate = subtractDays(nowFn(), startingConfig.MIN_AGE_IN_DAYS);
+    let startDate = parseDate(startingConfig.excludeRepositoriesCreatedBefore);
+    let endDate = subtractDays(nowFn(), startingConfig.minAgeInDays);
 
     // GitHub search API is inclusive for the start date and the end date.
     //
@@ -236,8 +122,8 @@ export function createNewProcessState(startingConfig:QueueConfig, outputFileName
     // - 2023-01-01 - 2023-01-05
     // - 2023-01-06 - 2023-01-10
 
-    let interval = daysInPeriod(startDate, endDate, startingConfig.SEARCH_PERIOD_IN_DAYS);
-    let hasActivityAfter = formatDate(subtractDays(nowFn(), startingConfig.MAX_INACTIVITY_DAYS))
+    let interval = daysInPeriod(startDate, endDate, startingConfig.searchPeriodInDays);
+    let hasActivityAfter = formatDate(subtractDays(nowFn(), startingConfig.maxInactivityDays))
 
     logger.info(`Creating a new process state, startDate: ${formatDate(startDate)}, endDate: ${formatDate(endDate)}, hasActivityAfter: ${hasActivityAfter}`);
 
@@ -245,19 +131,19 @@ export function createNewProcessState(startingConfig:QueueConfig, outputFileName
 
     for (let i = 0; i < interval.length; i++) {
         let createdAfter = formatDate(interval[i]);
-        let createdBefore = formatDate(addDays(interval[i], startingConfig.SEARCH_PERIOD_IN_DAYS - 1));
+        let createdBefore = formatDate(addDays(interval[i], startingConfig.searchPeriodInDays - 1));
         let key = uuidv4();
         newTasks.push({
             id: key,
             parentId: null,
             originatingTaskId: null,
-            minStars: startingConfig.MIN_STARS,
-            minForks: startingConfig.MIN_FORKS,
-            minSizeInKb: startingConfig.MIN_SIZE_IN_KB,
+            minStars: startingConfig.minStars,
+            minForks: startingConfig.minForks,
+            minSizeInKb: startingConfig.minSizeInKb,
             hasActivityAfter: hasActivityAfter,
             createdAfter: createdAfter,
             createdBefore: createdBefore,
-            pageSize: startingConfig.PAGE_SIZE,
+            pageSize: startingConfig.pageSize,
             startCursor: null,
         });
     }
@@ -313,9 +199,9 @@ function reportTaskQueue(taskQueue:TaskQueue<FocusProjectCandidateSearchQuery, T
     return queueState;
 }
 
-function getFileSystem(processConfig:any) {
+export function getFileSystem(dataDirectory:string) {
     return new FileSystem(
-        processConfig.DATA_DIRECTORY,
+        dataDirectory,
         "process-state-",
         ".json",
         "process-output-",
@@ -323,34 +209,18 @@ function getFileSystem(processConfig:any) {
     );
 }
 
-export function printIsLatestFileComplete() {
-    const processConfig = buildProcessConfigFromEnvVars();
-    const fileSystem = getFileSystem(processConfig);
-    const latestProcessStateFile = fileSystem.getLatestProcessStateFile();
-    if (latestProcessStateFile == null) {
-        // do not use logger here, as the caller will use the process output
-        console.log("true");
-        return;
-    }
-
-    const processState = JSON.parse(readFileSync(latestProcessStateFile, "utf8"));
-
-    // do not use logger here, as the caller will use the process output
-    console.log(processState.completionDate != null);
-}
-
-export async function main() {
+export async function start(mainArgs:Arguments, config:Config) {
     logger.info("Starting focus project candidate search");
-    const processConfig = buildProcessConfigFromEnvVars();
-    const newQueueConfig = buildNewQueueConfigFromEnvVars();
+    const processConfig = extractProcessConfig(config);
+    const newQueueConfig = extractNewQueueConfig(config);
     // store the output of current run as an array of objects
     // these objects will be written to the output file at the end of the run
     const currentRunOutput:FileOutput[] = [];
 
-    const fileSystem = getFileSystem(processConfig);
+    const fileSystem = getFileSystem(processConfig.dataDirectory);
 
     logger.info(`Read process config:` + JSON.stringify(processConfig, (key, value) => {
-        if (key == "GITHUB_TOKEN") {
+        if (key == "githubToken") {
             // print only the first 3 characters of the token, if it's available
             if (value && value.length > 3) {
                 return value.substring(0, 3) + "...[REDACTED]";
@@ -384,8 +254,8 @@ export async function main() {
         // start a new one, but only if RENEW_PERIOD_IN_DAYS has passed
         const now = getNow();
         const daysSinceCompletion = (now.getTime() - processState.completionDate.getTime()) / (1000 * 60 * 60 * 24);
-        if (daysSinceCompletion < processConfig.RENEW_PERIOD_IN_DAYS) {
-            logger.info(`Previous process is completed, but RENEW_PERIOD_IN_DAYS of ${processConfig.RENEW_PERIOD_IN_DAYS} hasn't passed yet. It has been ${daysSinceCompletion} days. Exiting.`);
+        if (daysSinceCompletion < processConfig.renewPeriodInDays) {
+            logger.info(`Previous process is completed, but RENEW_PERIOD_IN_DAYS of ${processConfig.renewPeriodInDays} hasn't passed yet. It has been ${daysSinceCompletion} days. Exiting.`);
             return;
         }
         logger.info("Previous queue is completed, and RENEW_PERIOD_IN_DAYS has passed. Starting a new queue.");
@@ -410,23 +280,23 @@ export async function main() {
     const taskQueue = new TaskQueue<FocusProjectCandidateSearchQuery, TaskOptions>(
         taskStore,
         {
-            concurrency: processConfig.CONCURRENCY,
-            perTaskTimeout: processConfig.PER_TASK_TIMEOUT_IN_MS,
-            intervalCap: processConfig.INTERVAL_CAP,
-            interval: processConfig.INTERVAL_IN_MS,
-            retryCount: processConfig.RETRY_COUNT,
+            concurrency: processConfig.concurrency,
+            perTaskTimeout: processConfig.perTaskTimeoutInMs,
+            intervalCap: processConfig.intervalCap,
+            interval: processConfig.intervalInMs,
+            retryCount: processConfig.retryCount,
         });
 
     let graphqlWithAuth = graphql.defaults({
         headers: {
-            Authorization: `bearer ${processConfig.GITHUB_TOKEN}`,
+            Authorization: `bearer ${processConfig.githubToken}`,
         },
         request: {
             fetch: fetch,
         }
     });
 
-    if (processConfig.RECORD_HTTP_CALLS) {
+    if (mainArgs.recordHttpCalls) {
         graphqlWithAuth = graphqlWithAuth.defaults({
             headers: {
                 // nock doesn't really support gzip, so we need to disable it
@@ -437,8 +307,8 @@ export async function main() {
 
     const process = new Process(
         processState, taskQueue, graphqlWithAuth, currentRunOutput, {
-            retryCount: processConfig.RETRY_COUNT,
-            rateLimitStopPercent: processConfig.RATE_LIMIT_STOP_PERCENT,
+            retryCount: processConfig.retryCount,
+            rateLimitStopPercent: processConfig.rateLimitStopPercent,
         }
     );
 
@@ -447,12 +317,12 @@ export async function main() {
     // Print the queue state periodically
     // noinspection ES6MissingAwait
     (async () => {
-        if (processConfig.REPORT_PERIOD_IN_MS == 0) {
+        if (processConfig.reportPeriodInMs == 0) {
             return;
         }
         while (true) {
             let queueState = reportTaskQueue(taskQueue, processState);
-            await new Promise(r => setTimeout(r, processConfig.REPORT_PERIOD_IN_MS));
+            await new Promise(r => setTimeout(r, processConfig.reportPeriodInMs));
 
             // There are some cases here:
             // queue size is 0, but there are unresolved tasks --> hit the rate limit, should stop reporting

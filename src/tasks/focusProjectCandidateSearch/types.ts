@@ -1,16 +1,6 @@
 import {ErroredTask} from "../../taskqueue";
 import {RepositorySummaryFragment} from "../../generated/queries";
-
-export interface QueueConfig {
-    MIN_STARS:number;
-    MIN_FORKS:number;
-    MIN_SIZE_IN_KB:number;
-    MAX_INACTIVITY_DAYS:number;
-    EXCLUDE_PROJECTS_CREATED_BEFORE:string;
-    MIN_AGE_IN_DAYS:number;
-    SEARCH_PERIOD_IN_DAYS:number;
-    PAGE_SIZE:number;
-}
+import {QueueConfig} from "./config";
 
 export interface TaskOptions {
     id:string;

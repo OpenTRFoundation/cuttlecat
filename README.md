@@ -13,75 +13,72 @@ npm install
 npm run build
 ```
 
+## Running the project
+
+```shell
+node dist/index.js
+```
+
 ## Usage
 
 ```shell
-PROCESS=<process name> \
-OTHER_PARAMETERS=... \
-npm run start
+Usage: index.js --command=<command> [options] [--help]
+
+Options:
+  --version            Show version number  [boolean]
+  --command            Command to run  [string] [required] [choices: "focus-project-candidate-search", "focus-project-candidate-search-complete"]
+  --record-http-calls  Record HTTP calls to disk for debugging purposes. "Nock back" will be used in `record` mode where the new records will be created. The calls will be stored in the `./nock-records/${command}_${timestamp}` directory.  [boolean] [default: false]
+  --log-level          Log level to use.  [string] [default: "info"]
 ```
 
-`PROCESS` can be one of the following:
+## Command `focus-project-candidate-search`
 
-- `FOCUS_PROJECT_CANDIDATE_SEARCH` - search for projects that can be used to identify the organizations that have focus projects
-- `FOCUS_PROJECT_CANDIDATE_SEARCH_LATEST_FILE_COMPLETE` - if the latest file for `FOCUS_PROJECT_CANDIDATE_SEARCH` is complete, print "true" in the console, otherwise print "false"
+```shell
+Usage: index.js focus-project-candidate-search [options]
+Run index.js --help for help on common options.
+Search for repositories that can be used to identify focus organizations and projects.
 
-### Recording HTTP calls
+Following options are not persisted in process file. They will always be used from the environment variables.
+  --github-token             GitHub API token. Token doesn't need any permissions.  [string] [required]
+  --data-directory           Data directory to read and store the output.  [string] [required]
+  --renew-period-in-days     Number of days to wait until creating a new queue after the latest one is completed.  [number] [default: 7]
+  --concurrency              Number of concurrent tasks to process the queue. As this search is IO bound and CPU bound, there can be many concurrent tasks (more than the number of cores). However, because of the rate limiting, there will be a lot of idle tasks. So, it is recommended to keep concurrency low.  [number] [default: 6]
+  --per-task-timeout-in-ms   Timeout in milliseconds for each task in the queue.Keeping the timeout too long will end up using too many GitHub actions minutes.Keeping the timeout too short will result in too many errored items.  [number] [default: 30000]
+  --rate-limit-stop-percent  Under this rate limit remaining percent, stop the queue.  [number] [default: 10]
+  --interval-cap             Max number of tasks to execute in the given interval by interval-in-ms.  [number] [default: 4]
+  --interval-in-ms           Interval for the cap in milliseconds.  [number] [default: 20000]
+  --retry-count              Number of retries for each task before giving up of creating narrower scoped tasks.  [number] [default: 3]
+  --report-period-in-ms      Period in milliseconds to print the queue state to stdout (0 for disabled)  [number] [default: 5000]
 
-Set `RECORD_HTTP_CALLS=true` to enable recording of HTTP calls using nock. "Nock back" will be used in `record` mode
-where the new records will be created.
+Following options are persisted in the process state file. This means, when the process is run for the same process file again later, it will use the values from the file. This is to continue an existing search process. The values passed as arguments will be ignored in that case.
+  --min-stars                            Minimum number of stars for a repositories to search for.  [number] [default: 50]
+  --min-forks                            Minimum number of forks for a repositories to search for.  [number] [default: 50]
+  --min-size-in-kb                       Minimum size of the repositories in KB to search for.  [number] [default: 1000]
+  --max-inactivity-days                  Maximum number of days since last commit; ignore repositories that have been inactive for longer than this  [number] [default: 90]
+  --exclude-repositories-created-before  The earliest date of repository creation to search for the repositories (format: YYYY-MM-DD)  [string] [default: "2008-01-01"]
+  --min-age-in-days                      Minimum number of days since the repository was created; ignore repositories younger than this  [number] [default: 365]
+  --search-period-in-days                Length of the date range in days to search for repositories in one call  [number] [default: 5]
+  --page-size                            Maximum number of repositories to find in one call  [number] [default: 100]
 
-The calls will be stored in the `./nock-records/${PROCESS}_${timestamp}` directory.
+Options:
+  --help     Show help  [boolean]
+  --version  Show version number  [boolean]
 
-### Enabling debug logging.
+```
 
-Set `LOG_LEVEL="debug"` to enable debug logging. Default log level is "info".
-
-### Process `FOCUS_PROJECT_CANDIDATE_SEARCH`
-
-Supports the following environment variables:
-
-| Name                              | Description                                                                                                       | Default value | Persisted |
-|-----------------------------------|-------------------------------------------------------------------------------------------------------------------|---------------|-----------|
-| `GITHUB_TOKEN`                    | GitHub API token. Token doesn't need any permissions.                                                             | N/A           | No        |
-| `DATA_DIRECTORY`                  | Data directory to read and store the output.                                                                      | N/A           | No        |
-| `RENEW_PERIOD_IN_DAYS`            | if previous queue is completed, create the next one after RENEW_PERIOD_IN_DAYS days                               | 7             | No        |
-| `CONCURRENCY`                     | number of concurrent tasks                                                                                        | 6             | No        |
-| `PER_TASK_TIMEOUT_IN_MS`          | timeout for each task                                                                                             | 30000         | No        |
-| `RATE_LIMIT_STOP_PERCENT`         | if rate limit remaining is less than RATE_LIMIT_STOP_PERCENT * rate limit (typically 1000) / 100, stop the queue. | 10            | No        |
-| `INTERVAL_CAP`                    | max number of tasks to execute in one interval                                                                    | 4             | No        |
-| `INTERVAL_IN_MS`                  | interval for the cap in milliseconds                                                                              | 20000         | No        |
-| `RETRY_COUNT`                     | number of retries for each task before giving up                                                                  | 3             | No        |
-| `REPORT_PERIOD_IN_MS`             | period to print the queue state (0 for disabled)                                                                  | 5000          | No        |
-|                                   |                                                                                                                   |               |           |
-| `MIN_STARS`                       | minimum number of stars                                                                                           | 50            | Yes       |
-| `MIN_FORKS`                       | minimum number of forks                                                                                           | 50            | Yes       |
-| `MIN_SIZE_IN_KB`                  | minimum size in KB                                                                                                | 1000          | Yes       |
-| `MAX_INACTIVITY_DAYS`             | maximum number of days since last commit; ignore projects that have been inactive for longer than this            | 90            | Yes       |
-| `EXCLUDE_PROJECTS_CREATED_BEFORE` | exclude projects created before this date (format: YYYY-MM-DD)                                                    | 2008-01-01    | Yes       |
-| `MIN_AGE_IN_DAYS`                 | minimum number of days since the project was created; ignore projects younger than this                           | 365           | Yes       |
-| `SEARCH_PERIOD_IN_DAYS`           | Number of days to search for projects in one call                                                                 | 5             | Yes       |
-| `PAGE_SIZE`                       | Max number of projects to return in one call                                                                      | 100           | Yes       |
-
-The options marked as `Yes` in the `Persisted` column are persisted in the process state file. This means, when the
-process is run again for the same process file again later, it will use the values from the file. This is to continue a
-search process. Those values will only be used if there's a new process file created.
-
-The options marked as `No` in the `Persisted` column will always be used from the environment variables.
-
-To start the process with defaults but with a short search date range:
+To start the command with defaults but with a short search date range:
 
 ```shell
 # store the results in a temporary directory
 rm -rf /tmp/foo/bar
 mkdir -p /tmp/foo/bar
 
-GITHUB_TOKEN="$(gh auth token)" \
-DATA_DIRECTORY="/tmp/foo/bar" \
-PROCESS="FOCUS_PROJECT_CANDIDATE_SEARCH" \
-MIN_AGE_IN_DAYS=5700 \
-LOG_LEVEL="debug" \
-npm run start
+node dist/index.js \
+    --command="focus-project-candidate-search" \
+    --github-token="$(gh auth token)" \
+    --data-directory="/tmp/foo/bar" \
+    --min-age-in-days="5700" \
+    --log-level="debug"
 ```
 
 To start the process with recording:
@@ -91,31 +88,34 @@ To start the process with recording:
 rm -rf /tmp/foo/bar
 mkdir -p /tmp/foo/bar
 
-GITHUB_TOKEN="$(gh auth token)" \
-DATA_DIRECTORY="/tmp/foo/bar" \
-PROCESS="FOCUS_PROJECT_CANDIDATE_SEARCH" \
-MIN_AGE_IN_DAYS=5750 \
-RECORD_HTTP_CALLS=true \
-LOG_LEVEL="debug" \
-npm run start
+node dist/index.js \
+    --command="focus-project-candidate-search" \
+    --github-token="$(gh auth token)" \
+    --data-directory="/tmp/foo/bar" \
+    --min-age-in-days="5700" \
+    --log-level="debug" \
+    --record-http-calls="true"
 ```
-### Process `FOCUS_PROJECT_CANDIDATE_SEARCH_LATEST_FILE_COMPLETE`
-
-Supports the following environment variables:
-
-| Name                              | Description                                           | Default value | Persisted |
-|-----------------------------------|-------------------------------------------------------|---------------|-----------|
-| `GITHUB_TOKEN`                    | GitHub API token. Token doesn't need any permissions. | N/A           | No        |
-| `DATA_DIRECTORY`                  | Data directory to check the latest file.              | N/A           | No        |
-
-You will want to use "LOG_LEVEL=error" to see the output and only the output.
+### Command `focus-project-candidate-search-complete`
 
 ```shell
-GITHUB_TOKEN="$(gh auth token)" \
-DATA_DIRECTORY="/Users/aliok/go/src/github.com/opentrfoundation/state-of-oss-contribution/focus-project-candidate-search" \
-PROCESS="FOCUS_PROJECT_CANDIDATE_SEARCH_LATEST_FILE_COMPLETE" \
-LOG_LEVEL="error" \
-npm run start
+Usage: index.js focus-project-candidate-search-complete [options]
+Run index.js --help for help on common options.
+Checks if the latest focus project candidate search is complete and prints the result in the stdout.
+
+Options:
+  --help            Show help  [boolean]
+  --version         Show version number  [boolean]
+  --data-directory  Data directory to check the focus project candidate search files.  [string] [required]
+```
+
+You will want to use `--log-level="error"` to see the output and only the output.
+
+```shell
+node dist/index.js \
+    --command="focus-project-candidate-search-complete" \
+    --data-directory="/tmp/foo/bar" \
+    --log-level="debug"
 ```
 
 ## Running tests

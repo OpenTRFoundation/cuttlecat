@@ -44,6 +44,7 @@
     "@types/node": "^20.6.3",
     "@types/node-fetch": "^2.6.7",
     "@types/uuid": "^9.0.4",
+    "@types/yargs": "^17.0.29",
     "chai": "^4.3.10",
     "chai-as-promised": "^7.1.1",
     "mocha": "^10.2.0",
@@ -55,7 +56,6 @@
     "@octokit/graphql": "^7.0.1",
     "@types/lodash": "^4.14.199",
     "date-fns": "^2.30.0",
-    "envalid": "^8.0.0",
     "eventemitter3": "^5.0.1",
     "graphql": "^16.8.1",
     "graphql-tag": "^2.12.6",
@@ -64,7 +64,8 @@
     "node-fetch": "^2.7.0",
     "p-queue": "^7.4.1",
     "uuid": "^9.0.1",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "yargs": "^17.7.2"
   },
   "bugs": {
     "url": "https://github.com/OpenTRFoundation/cuttlecat/issues"
