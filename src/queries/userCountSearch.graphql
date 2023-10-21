@@ -1,0 +1,13 @@
+query UserCountSearch($searchString: String!){
+    rateLimit {
+        cost
+        limit
+        nodeCount
+        remaining
+        resetAt
+        used
+    }
+    search(type: USER, query: $searchString, first: 1) {
+        userCount
+    }
+}

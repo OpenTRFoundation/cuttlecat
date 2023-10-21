@@ -1,23 +1,24 @@
 import {graphql} from "@octokit/graphql";
 import {v4 as uuidv4} from 'uuid';
-import {FocusProjectCandidateSearchQuery} from "../../generated/queries";
+import {UserCountSearchQuery} from "../../generated/queries";
 import {createWriteStream, readFileSync, writeFileSync} from 'fs'
 
 import {TaskQueue} from "../../taskqueue";
-import {addDays, daysInPeriod, formatDate, now as getNow, parseDate, subtractDays} from "../../utils";
+import {now as getNow} from "../../utils";
 import FileSystem from "../../fileSystem";
 import {shuffle} from "lodash";
 import {FileOutput, ProcessState, TaskOptions} from "./types";
 import {Task} from "./task";
 import fetch from "node-fetch";
 import {createLogger} from "../../log";
+import {LocationsOutput} from "../locationGeneration/generate";
 import {Arguments} from "../../arguments";
 import {buildConfig, Config, extractNewQueueConfig, extractProcessConfig, QueueConfig} from "./config";
 
-const logger = createLogger("focusProjectCandidateSearch/process");
+const logger = createLogger("userCountSearch/process");
 
-export const commandName = "focus-project-candidate-search";
-export const commandDescription = "Search for repositories that can be used to identify focus organizations and projects.";
+export const commandName = "user-count-search";
+export const commandDescription = "Search for user counts for given search criteria.";
 
 export async function main(mainConfig:Arguments) {
     const config:Config = buildConfig();
@@ -27,7 +28,7 @@ export async function main(mainConfig:Arguments) {
 
 export class Process {
     private readonly processState:ProcessState;
-    private readonly taskQueue:TaskQueue<FocusProjectCandidateSearchQuery, TaskOptions>;
+    private readonly taskQueue:TaskQueue<UserCountSearchQuery, TaskOptions>;
     private readonly graphqlFn:typeof graphql;
     private readonly currentRunOutput:FileOutput[];
     private readonly options:{
@@ -35,7 +36,7 @@ export class Process {
         rateLimitStopPercent:number,
     };
 
-    constructor(processState:ProcessState, taskQueue:TaskQueue<FocusProjectCandidateSearchQuery, TaskOptions>, graphqlFn:typeof graphql, currentRunOutput:FileOutput[], options:{
+    constructor(processState:ProcessState, taskQueue:TaskQueue<UserCountSearchQuery, TaskOptions>, graphqlFn:typeof graphql, currentRunOutput:FileOutput[], options:{
         retryCount:number;
         rateLimitStopPercent:number
     }) {
@@ -91,64 +92,29 @@ export class Process {
 }
 
 export function createNewProcessState(startingConfig:QueueConfig, outputFileName:string, nowFn:() => Date):ProcessState {
-    let startDate = parseDate(startingConfig.excludeRepositoriesCreatedBefore);
-    let endDate = subtractDays(nowFn(), startingConfig.minAgeInDays);
+    // read JSON file and create an entry for each location
+    const locationsOutput:LocationsOutput = JSON.parse(readFileSync(startingConfig.locationJsonFile, "utf8"));
+    const locations:string[] = [];
+    for (let key in locationsOutput) {
+        locations.push(...locationsOutput[key].alternatives);
+    }
 
-    // GitHub search API is inclusive for the start date and the end date.
-    //
-    // Example call with a 2-day period:
-    //
-    // curl -G \
-    //   -H "Accept: application/vnd.github+json" \
-    //   -H "X-GitHub-Api-Version: 2022-11-28" \
-    //   --data-urlencode 'q=stars:>50 forks:>10 is:public pushed:>2023-06-19 size:>1000 template:false archived:false created:2010-01-12..2010-01-13' \
-    //   "https://api.github.com/search/repositories" | jq '.items[] | "\(.created_at)   \(.full_name)"'
-    // Results:
-    // "2010-01-12T09:37:53Z   futuretap/InAppSettingsKit"
-    // "2010-01-13T05:52:38Z   vasi/pixz"
-    //
-    // Example call with a 1-day period:
-    //
-    // curl -G \
-    //   -H "Accept: application/vnd.github+json" \
-    //   -H "X-GitHub-Api-Version: 2022-11-28" \
-    //   --data-urlencode 'q=stars:>50 forks:>10 is:public pushed:>2023-06-19 size:>1000 template:false archived:false created:2010-01-13..2010-01-13' \
-    //   "https://api.github.com/search/repositories" | jq '.items[] | "\(.created_at)   \(.full_name)"'
-    // Results:
-    // "2010-01-13T05:52:38Z   vasi/pixz"
-    //
-    // So, to prevent any duplicates, we need to make sure that the intervals are exclusive.
-    // Like these:
-    // - 2023-01-01 - 2023-01-05
-    // - 2023-01-06 - 2023-01-10
-
-    let interval = daysInPeriod(startDate, endDate, startingConfig.searchPeriodInDays);
-    let hasActivityAfter = formatDate(subtractDays(nowFn(), startingConfig.maxInactivityDays))
-
-    logger.info(`Creating a new process state, startDate: ${formatDate(startDate)}, endDate: ${formatDate(endDate)}, hasActivityAfter: ${hasActivityAfter}`);
+    logger.info(`Creating a new process state, MIN_REPOS: ${startingConfig.minRepositories}, MIN_FOLLOWERS: ${startingConfig.minFollowers}, number of locations: ${locations.length}`);
 
     let newTasks:TaskOptions[] = [];
 
-    for (let i = 0; i < interval.length; i++) {
-        let createdAfter = formatDate(interval[i]);
-        let createdBefore = formatDate(addDays(interval[i], startingConfig.searchPeriodInDays - 1));
+    for (let i = 0; i < locations.length; i++) {
         let key = uuidv4();
         newTasks.push({
             id: key,
             parentId: null,
             originatingTaskId: null,
-            minStars: startingConfig.minStars,
-            minForks: startingConfig.minForks,
-            minSizeInKb: startingConfig.minSizeInKb,
-            hasActivityAfter: hasActivityAfter,
-            createdAfter: createdAfter,
-            createdBefore: createdBefore,
-            pageSize: startingConfig.pageSize,
-            startCursor: null,
+            location: locations[i],
+            minRepos: startingConfig.minRepositories,
+            minFollowers: startingConfig.minFollowers,
         });
     }
 
-    // tasks for some date ranges return lots of data and some return very little data.
     // let's shuffle to have a more even distribution of request durations.
     newTasks = shuffle(newTasks);
 
@@ -192,7 +158,7 @@ function saveProcessRunOutput(fileSystem:FileSystem, stateFile:string, processSt
     outputStream.end();
 }
 
-function reportTaskQueue(taskQueue:TaskQueue<FocusProjectCandidateSearchQuery, TaskOptions>, processState:ProcessState) {
+function reportTaskQueue(taskQueue:TaskQueue<UserCountSearchQuery, TaskOptions>, processState:ProcessState) {
     let queueState = taskQueue.getState();
     logger.info(`---- Task queue state: ${JSON.stringify(queueState)}`);
     logger.info(`---- Task store      : unresolved: ${Object.keys(processState.unresolved).length}, resolved: ${Object.keys(processState.resolved).length}, errored: ${Object.keys(processState.errored).length}, archived: ${Object.keys(processState.archived).length}`);
@@ -277,7 +243,7 @@ export async function start(mainArgs:Arguments, config:Config) {
         archived: processState.archived,
     };
 
-    const taskQueue = new TaskQueue<FocusProjectCandidateSearchQuery, TaskOptions>(
+    const taskQueue = new TaskQueue<UserCountSearchQuery, TaskOptions>(
         taskStore,
         {
             concurrency: processConfig.concurrency,

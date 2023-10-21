@@ -6,7 +6,7 @@
     "body": {
       "query": "\n    query FocusProjectCandidateSearch($searchString: String!, $first: Int!, $after: String) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n    pageInfo {\n      startCursor\n      hasNextPage\n      endCursor\n    }\n    repositoryCount\n    nodes {\n      ...RepositorySummary\n    }\n  }\n}\n    \n    fragment RepositorySummary on Repository {\n  nameWithOwner\n  isInOrganization\n  owner {\n    login\n  }\n  forkCount\n  stargazerCount\n  pullRequests {\n    totalCount\n  }\n  issues {\n    totalCount\n  }\n  mentionableUsers {\n    totalCount\n  }\n  watchers {\n    totalCount\n  }\n}\n    ",
       "variables": {
-        "searchString": "is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-01-01 created:2023-01-01..2023-01-01",
+        "searchString": "is:public template:false archived:false stars:>=50 forks:>=50 size:>=1000 pushed:>=2023-01-01 created:2023-01-01..2023-01-01",
         "first": 100,
         "after": null
       }
@@ -47,7 +47,7 @@
     "body": {
       "query": "\n    query FocusProjectCandidateSearch($searchString: String!, $first: Int!, $after: String) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n    pageInfo {\n      startCursor\n      hasNextPage\n      endCursor\n    }\n    repositoryCount\n    nodes {\n      ...RepositorySummary\n    }\n  }\n}\n    \n    fragment RepositorySummary on Repository {\n  nameWithOwner\n  isInOrganization\n  owner {\n    login\n  }\n  forkCount\n  stargazerCount\n  pullRequests {\n    totalCount\n  }\n  issues {\n    totalCount\n  }\n  mentionableUsers {\n    totalCount\n  }\n  watchers {\n    totalCount\n  }\n}\n    ",
       "variables": {
-        "searchString": "is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-01-01 created:2023-01-02..2023-01-02",
+        "searchString": "is:public template:false archived:false stars:>=50 forks:>=50 size:>=1000 pushed:>=2023-01-01 created:2023-01-02..2023-01-02",
         "first": 100,
         "after": null
       }
@@ -74,7 +74,7 @@
     "body": {
       "query": "\n    query FocusProjectCandidateSearch($searchString: String!, $first: Int!, $after: String) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n    pageInfo {\n      startCursor\n      hasNextPage\n      endCursor\n    }\n    repositoryCount\n    nodes {\n      ...RepositorySummary\n    }\n  }\n}\n    \n    fragment RepositorySummary on Repository {\n  nameWithOwner\n  isInOrganization\n  owner {\n    login\n  }\n  forkCount\n  stargazerCount\n  pullRequests {\n    totalCount\n  }\n  issues {\n    totalCount\n  }\n  mentionableUsers {\n    totalCount\n  }\n  watchers {\n    totalCount\n  }\n}\n    ",
       "variables": {
-        "searchString": "is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-01-01 created:2023-01-02..2023-01-02",
+        "searchString": "is:public template:false archived:false stars:>=50 forks:>=50 size:>=1000 pushed:>=2023-01-01 created:2023-01-02..2023-01-02",
         "first": 100,
         "after": null
       }
@@ -101,7 +101,7 @@
     "body": {
       "query": "\n    query FocusProjectCandidateSearch($searchString: String!, $first: Int!, $after: String) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n    pageInfo {\n      startCursor\n      hasNextPage\n      endCursor\n    }\n    repositoryCount\n    nodes {\n      ...RepositorySummary\n    }\n  }\n}\n    \n    fragment RepositorySummary on Repository {\n  nameWithOwner\n  isInOrganization\n  owner {\n    login\n  }\n  forkCount\n  stargazerCount\n  pullRequests {\n    totalCount\n  }\n  issues {\n    totalCount\n  }\n  mentionableUsers {\n    totalCount\n  }\n  watchers {\n    totalCount\n  }\n}\n    ",
       "variables": {
-        "searchString": "is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-01-01 created:2023-01-02..2023-01-02",
+        "searchString": "is:public template:false archived:false stars:>=50 forks:>=50 size:>=1000 pushed:>=2023-01-01 created:2023-01-02..2023-01-02",
         "first": 100,
         "after": null
       }
@@ -128,7 +128,7 @@
     "body": {
       "query": "\n    query FocusProjectCandidateSearch($searchString: String!, $first: Int!, $after: String) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: REPOSITORY, query: $searchString, first: $first, after: $after) {\n    pageInfo {\n      startCursor\n      hasNextPage\n      endCursor\n    }\n    repositoryCount\n    nodes {\n      ...RepositorySummary\n    }\n  }\n}\n    \n    fragment RepositorySummary on Repository {\n  nameWithOwner\n  isInOrganization\n  owner {\n    login\n  }\n  forkCount\n  stargazerCount\n  pullRequests {\n    totalCount\n  }\n  issues {\n    totalCount\n  }\n  mentionableUsers {\n    totalCount\n  }\n  watchers {\n    totalCount\n  }\n}\n    ",
       "variables": {
-        "searchString": "is:public template:false archived:false stars:>50 forks:>50 size:>1000 pushed:>2023-01-01 created:2023-01-02..2023-01-02",
+        "searchString": "is:public template:false archived:false stars:>=50 forks:>=50 size:>=1000 pushed:>=2023-01-01 created:2023-01-02..2023-01-02",
         "first": 100,
         "after": null
       }

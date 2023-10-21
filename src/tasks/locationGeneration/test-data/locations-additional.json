@@ -1,0 +1,14 @@
+{
+  "Turkey": {
+    "alternatives": [
+      "TR",
+      "Türkiye"
+    ],
+    "root": true
+  },
+  "Afyonkarahisar": {
+    "alternatives": [
+      "Afyon"
+    ]
+  }
+}
