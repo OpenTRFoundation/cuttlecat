@@ -11,6 +11,8 @@ import {SubCommand} from "./subcommand";
 const subCommandPaths = [
     './tasks/focusProjectCandidateSearch/process.js',
     './tasks/focusProjectCandidateSearch/printLatestFileComplete.js',
+    './tasks/locationGeneration/generate.js',
+    './tasks/userCountSearch/process.js',
 ];
 
 function buildCommands(subCommands:string[]) {

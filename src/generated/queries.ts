@@ -6854,6 +6854,13 @@ export type FocusProjectCandidateSearchQuery = { __typename?: 'Query', rateLimit
 
 export type RepositorySummaryFragment = { __typename?: 'Repository', nameWithOwner: string, isInOrganization: boolean, forkCount: number, stargazerCount: number, owner: { __typename?: 'Organization', login: string } | { __typename?: 'User', login: string }, pullRequests: { __typename?: 'PullRequestConnection', totalCount: number }, issues: { __typename?: 'IssueConnection', totalCount: number }, mentionableUsers: { __typename?: 'UserConnection', totalCount: number }, watchers: { __typename?: 'UserConnection', totalCount: number } };
 
+export type UserCountSearchQueryVariables = Exact<{
+  searchString: Scalars['String']['input'];
+}>;
+
+
+export type UserCountSearchQuery = { __typename?: 'Query', rateLimit?: { __typename?: 'RateLimit', cost: number, limit: number, nodeCount: number, remaining: number, resetAt: any, used: number } | null, search: { __typename?: 'SearchResultItemConnection', userCount: number } };
+
 export const RepositorySummary = gql`
     fragment RepositorySummary on Repository {
   nameWithOwner
@@ -6900,3 +6907,18 @@ export const FocusProjectCandidateSearch = gql`
   }
 }
     ${RepositorySummary}`;
+export const UserCountSearch = gql`
+    query UserCountSearch($searchString: String!) {
+  rateLimit {
+    cost
+    limit
+    nodeCount
+    remaining
+    resetAt
+    used
+  }
+  search(type: USER, query: $searchString, first: 1) {
+    userCount
+  }
+}
+    `;

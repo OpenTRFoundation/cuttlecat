@@ -1,0 +1,66 @@
+{
+  "Turkey": {
+    "text": "Turkey",
+    "parent": null,
+    "alternatives": [
+      "Turkey",
+      "TR",
+      "Türkiye",
+      "Türkıye",
+      "Turkiye",
+      "Turkıye"
+    ]
+  },
+  "Adana": {
+    "text": "Adana",
+    "parent": "Turkey",
+    "alternatives": [
+      "Adana"
+    ]
+  },
+  "Aladağ": {
+    "text": "Aladağ",
+    "parent": "Adana",
+    "alternatives": [
+      "Aladağ",
+      "Aladag"
+    ]
+  },
+  "Ceyhan": {
+    "text": "Ceyhan",
+    "parent": "Adana",
+    "alternatives": [
+      "Ceyhan"
+    ]
+  },
+  "Afyonkarahisar": {
+    "text": "Afyonkarahisar",
+    "parent": "Turkey",
+    "alternatives": [
+      "Afyonkarahisar",
+      "Afyon",
+      "Afyonkarahısar"
+    ]
+  },
+  "Başmakçı": {
+    "text": "Başmakçı",
+    "parent": "Afyonkarahisar",
+    "alternatives": [
+      "Başmakçı",
+      "Başmakçi",
+      "Başmakcı",
+      "Başmakci",
+      "Basmakçı",
+      "Basmakçi",
+      "Basmakcı",
+      "Basmakci"
+    ]
+  },
+  "Zonguldak": {
+    "text": "Zonguldak",
+    "parent": "Turkey",
+    "alternatives": [
+      "Zonguldak"
+    ]
+  }
+}
