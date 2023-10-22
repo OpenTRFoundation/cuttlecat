@@ -12,8 +12,7 @@ import {FileOutput} from "./process";
 
 const logger = createLogger("focusProjectCandidateSearch/task");
 
-// TODO: rename TaskOptions to TaskSpec
-export interface TaskOptions extends GraphqlTaskSpec {
+export interface TaskSpec extends GraphqlTaskSpec {
     minStars:number;
     minForks:number;
     minSizeInKb:number;
@@ -24,10 +23,10 @@ export interface TaskOptions extends GraphqlTaskSpec {
     startCursor:string | null;
 }
 
-export class Task extends GraphqlTask<FocusProjectCandidateSearchQuery, TaskOptions> {
+export class Task extends GraphqlTask<FocusProjectCandidateSearchQuery, TaskSpec> {
     private readonly currentRunOutput:FileOutput[];
 
-    constructor(graphqlWithAuth:typeof graphql, rateLimitStopPercent:number, currentRunOutput:FileOutput[], options:TaskOptions) {
+    constructor(graphqlWithAuth:typeof graphql, rateLimitStopPercent:number, currentRunOutput:FileOutput[], options:TaskSpec) {
         super(graphqlWithAuth, rateLimitStopPercent, options);
         this.currentRunOutput = currentRunOutput;
     }
@@ -35,17 +34,17 @@ export class Task extends GraphqlTask<FocusProjectCandidateSearchQuery, TaskOpti
     protected buildQueryParameters() {
         const searchString =
             "is:public template:false archived:false " +
-            `stars:>=${this.options.minStars} ` +
-            `forks:>=${this.options.minForks} ` +
-            `size:>=${this.options.minSizeInKb} ` +
-            `pushed:>=${this.options.hasActivityAfter} ` +
+            `stars:>=${this.spec.minStars} ` +
+            `forks:>=${this.spec.minForks} ` +
+            `size:>=${this.spec.minSizeInKb} ` +
+            `pushed:>=${this.spec.hasActivityAfter} ` +
             // both ends are inclusive
-            `created:${this.options.createdAfter}..${this.options.createdBefore}`;
+            `created:${this.spec.createdAfter}..${this.spec.createdBefore}`;
 
         return {
             "searchString": searchString,
-            "first": this.options.pageSize,
-            "after": this.options.startCursor,
+            "first": this.spec.pageSize,
+            "after": this.spec.startCursor,
         };
     }
 
@@ -60,13 +59,13 @@ export class Task extends GraphqlTask<FocusProjectCandidateSearchQuery, TaskOpti
                     id: uuidv4(),
                     parentId: null,
                     originatingTaskId: this.getId(),
-                    minStars: this.options.minStars,
-                    minForks: this.options.minForks,
-                    minSizeInKb: this.options.minSizeInKb,
-                    hasActivityAfter: this.options.hasActivityAfter,
-                    createdAfter: this.options.createdAfter,
-                    createdBefore: this.options.createdBefore,
-                    pageSize: this.options.pageSize,
+                    minStars: this.spec.minStars,
+                    minForks: this.spec.minForks,
+                    minSizeInKb: this.spec.minSizeInKb,
+                    hasActivityAfter: this.spec.hasActivityAfter,
+                    createdAfter: this.spec.createdAfter,
+                    createdBefore: this.spec.createdBefore,
+                    pageSize: this.spec.pageSize,
                     startCursor: <string>output.search.pageInfo.endCursor,
                 }
             );
@@ -83,14 +82,14 @@ export class Task extends GraphqlTask<FocusProjectCandidateSearchQuery, TaskOpti
         // this task with a start cursor.
         // However, this means, some date ranges will be searched twice and there will be duplicate output.
         // It is fine though! We can filter the output later.
-        if (this.options.startCursor) {
+        if (this.spec.startCursor) {
             logger.debug(`Narrowed down tasks can't be created for task ${this.getId()} as it has a start cursor.`);
-            logger.debug(`Creating narrowed down tasks for the originating task ${this.options.originatingTaskId}`);
+            logger.debug(`Creating narrowed down tasks for the originating task ${this.spec.originatingTaskId}`);
         }
 
         let newTasks:Task[] = [];
-        const startDate = parseDate(this.options.createdAfter);
-        const endDate = parseDate(this.options.createdBefore);
+        const startDate = parseDate(this.spec.createdAfter);
+        const endDate = parseDate(this.spec.createdBefore);
 
         const halfPeriods = splitPeriodIntoHalves(startDate, endDate);
         if (halfPeriods.length < 1) {
@@ -108,14 +107,14 @@ export class Task extends GraphqlTask<FocusProjectCandidateSearchQuery, TaskOpti
                     {
                         id: uuidv4(),
                         parentId: this.getId(),
-                        originatingTaskId: this.options.originatingTaskId,
-                        minStars: this.options.minStars,
-                        minForks: this.options.minForks,
-                        minSizeInKb: this.options.minSizeInKb,
-                        hasActivityAfter: this.options.hasActivityAfter,
+                        originatingTaskId: this.spec.originatingTaskId,
+                        minStars: this.spec.minStars,
+                        minForks: this.spec.minForks,
+                        minSizeInKb: this.spec.minSizeInKb,
+                        hasActivityAfter: this.spec.hasActivityAfter,
                         createdAfter: formatDate(halfPeriod.start),
                         createdBefore: formatDate(halfPeriod.end),
-                        pageSize: this.options.pageSize,
+                        pageSize: this.spec.pageSize,
                         startCursor: null,
                     }
                 )

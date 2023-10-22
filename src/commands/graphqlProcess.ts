@@ -55,7 +55,6 @@ export abstract class GraphqlProcess<QueueConfig, TaskSpec extends GraphqlTaskSp
 
         for (let key in this.processState.unresolved) {
             const task = this.createNewTask(this.processState.unresolved[key]);
-            //const task = new Task(this.graphqlFn, this.options.rateLimitStopPercent, this.currentRunOutput, this.processState.unresolved[key]);
             logger.debug(`Adding task to queue: ${task.getId()}`);
             // DO NOT await here, as it will block the loop
             // fire and forget.

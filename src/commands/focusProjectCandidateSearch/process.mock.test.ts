@@ -10,7 +10,7 @@ import loadDynamicImports from "../../dynamic-imports";
 import {QueueConfig} from "./config";
 
 import * as log from "../../log";
-import {TaskOptions} from "./task";
+import {TaskSpec} from "./task";
 
 // disable logging for tests
 log.setLevel("error");
@@ -211,7 +211,7 @@ describe('focusProjectCandidateSearch mock test', () => {
                 pageSize: 0,
             };
 
-            let unresolved:{ [key:string]:TaskOptions } = {};
+            let unresolved:{ [key:string]:TaskSpec } = {};
             for (let i = 0; i < test.unresolved.length; i++) {
                 unresolved[test.unresolved[i].id] = test.unresolved[i];
             }
@@ -235,7 +235,7 @@ describe('focusProjectCandidateSearch mock test', () => {
                 archived: processState.archived,
             };
 
-            const taskQueue = new TaskQueue<FocusProjectCandidateSearchQuery, TaskOptions>(
+            const taskQueue = new TaskQueue<FocusProjectCandidateSearchQuery, TaskSpec>(
                 taskStore,
                 {
                     concurrency: 4,

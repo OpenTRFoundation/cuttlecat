@@ -9,26 +9,25 @@ const logger = createLogger("userCountSearch/task");
 // TODO: add docs here and in the other files
 // TODO: also add docs in other commands
 
-// TODO: rename TaskOptions to TaskSpec
-export interface TaskOptions extends GraphqlTaskSpec {
+export interface TaskSpec extends GraphqlTaskSpec {
     location:string;
     minRepos:number;
     minFollowers:number;
 }
 
-export class Task extends GraphqlTask<UserCountSearchQuery, TaskOptions> {
+export class Task extends GraphqlTask<UserCountSearchQuery, TaskSpec> {
     private readonly currentRunOutput:FileOutput[];
 
-    constructor(graphqlWithAuth:typeof graphql, rateLimitStopPercent:number, currentRunOutput:FileOutput[], options:TaskOptions) {
-        super(graphqlWithAuth, rateLimitStopPercent, options);
+    constructor(graphqlWithAuth:typeof graphql, rateLimitStopPercent:number, currentRunOutput:FileOutput[], spec:TaskSpec) {
+        super(graphqlWithAuth, rateLimitStopPercent, spec);
         this.currentRunOutput = currentRunOutput;
     }
 
     protected buildQueryParameters() {
         const searchString =
-            `location:${this.options.location} ` +
-            `repos:>=${this.options.minRepos} ` +
-            `followers:>=${this.options.minFollowers}`;
+            `location:${this.spec.location} ` +
+            `repos:>=${this.spec.minRepos} ` +
+            `followers:>=${this.spec.minFollowers}`;
 
         return {
             "searchString": searchString,
@@ -41,7 +40,7 @@ export class Task extends GraphqlTask<UserCountSearchQuery, TaskOptions> {
         this.currentRunOutput.push({
             taskId: this.getId(),
             result: {
-                location: this.options.location,
+                location: this.spec.location,
                 userCount: output.search.userCount,
             },
         });

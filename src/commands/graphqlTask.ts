@@ -23,29 +23,29 @@ export interface GraphqlTaskResult {
 export abstract class GraphqlTask<ResultType extends GraphqlTaskResult, TaskSpec extends GraphqlTaskSpec> extends BaseTask<ResultType, TaskSpec> {
     protected readonly graphqlWithAuth:typeof graphql<ResultType>;
     protected readonly rateLimitStopPercent:number;
-    protected readonly options:TaskSpec;
+    protected readonly spec:TaskSpec;
 
-    protected constructor(graphqlWithAuth:typeof graphql, rateLimitStopPercent:number, options:TaskSpec) {
+    protected constructor(graphqlWithAuth:typeof graphql, rateLimitStopPercent:number, spec:TaskSpec) {
         super();
         this.graphqlWithAuth = graphqlWithAuth;
         this.rateLimitStopPercent = rateLimitStopPercent;
-        this.options = options;
+        this.spec = spec;
     }
 
     getId():string {
-        return this.options.id;
+        return this.spec.id;
     }
 
     getSpec():TaskSpec {
-        return this.options;
+        return this.spec;
     }
 
     setParentId(id:string):void {
-        this.options.parentId = id;
+        this.spec.parentId = id;
     }
 
     setOriginatingTaskId(id:string):void {
-        this.options.originatingTaskId = id;
+        this.spec.originatingTaskId = id;
     }
 
     async execute(signal:AbortSignal):Promise<ResultType> {

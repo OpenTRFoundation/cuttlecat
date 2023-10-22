@@ -9,7 +9,7 @@ import {v4 as uuidv4} from "uuid";
 import {TaskQueue} from "../../taskqueue";
 import {graphql} from "@octokit/graphql";
 import FileSystem from "../../fileSystem";
-import {TaskOptions} from "./task";
+import {TaskSpec} from "./task";
 
 const logger = createLogger("focusProjectCandidateSearch/command");
 
@@ -25,7 +25,7 @@ export async function main(mainConfig:Arguments) {
 }
 
 
-export class Command extends GraphQLProcessCommand<QueueConfig, TaskOptions, FocusProjectCandidateSearchQuery> {
+export class Command extends GraphQLProcessCommand<QueueConfig, TaskSpec, FocusProjectCandidateSearchQuery> {
     private readonly newQueueConfig:QueueConfig;
 
     constructor(processConfig:ProcessConfig, newQueueConfig:QueueConfig, mainArgs:Arguments) {
@@ -70,7 +70,7 @@ export class Command extends GraphQLProcessCommand<QueueConfig, TaskOptions, Foc
 
         logger.info(`Creating a new process state, startDate: ${formatDate(startDate)}, endDate: ${formatDate(endDate)}, hasActivityAfter: ${hasActivityAfter}`);
 
-        let unresolved:{ [key:string]:TaskOptions } = {};
+        let unresolved:{ [key:string]:TaskSpec } = {};
 
         for (let i = 0; i < interval.length; i++) {
             let createdAfter = formatDate(interval[i]);
@@ -104,7 +104,7 @@ export class Command extends GraphQLProcessCommand<QueueConfig, TaskOptions, Foc
         }
     }
 
-    createProcess(processState:ProcessState, taskQueue:TaskQueue<FocusProjectCandidateSearchQuery, TaskOptions>, graphqlWithAuth:typeof graphql, currentRunOutput:any[]):Process {
+    createProcess(processState:ProcessState, taskQueue:TaskQueue<FocusProjectCandidateSearchQuery, TaskSpec>, graphqlWithAuth:typeof graphql, currentRunOutput:any[]):Process {
         return new Process(
             processState, taskQueue, graphqlWithAuth, currentRunOutput, {
                 retryCount: this.processConfig.retryCount,

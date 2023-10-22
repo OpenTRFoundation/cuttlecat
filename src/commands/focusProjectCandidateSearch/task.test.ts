@@ -1,4 +1,4 @@
-import {Task, TaskOptions} from "./task";
+import {Task, TaskSpec} from "./task";
 import {graphql} from "@octokit/graphql";
 import {FocusProjectCandidateSearch} from "../../generated/queries";
 import chai, {expect} from "chai";
@@ -27,7 +27,7 @@ describe('focusProjectCandidateSearch Task', () => {
                 }
             };
 
-            const options:TaskOptions = {
+            const spec:TaskSpec = {
                 id: "deadbeef",
                 parentId: null,
                 originatingTaskId: "beefdead",
@@ -41,7 +41,7 @@ describe('focusProjectCandidateSearch Task', () => {
                 startCursor: "start",
             };
 
-            const task = new Task(fakeGraphql, 0, [], options);
+            const task = new Task(fakeGraphql, 0, [], spec);
             const response = await task.execute(signal);
 
             expect(response).to.be.equal(output);
@@ -102,7 +102,7 @@ describe('focusProjectCandidateSearch Task', () => {
     });
     describe('#nextTask()', function () {
         it('should a task, if next page exists', function () {
-            const options:TaskOptions = {
+            const spec:TaskSpec = {
                 id: "deadbeef",
                 parentId: null,
                 originatingTaskId: null,
@@ -126,7 +126,7 @@ describe('focusProjectCandidateSearch Task', () => {
             };
 
             // @ts-ignore
-            let nextTask:Task = new Task(graphql, 0, [], options).nextTask(output);
+            let nextTask:Task = new Task(graphql, 0, [], spec).nextTask(output);
             expect(nextTask).to.be.not.null;
 
             // fixed
@@ -144,7 +144,7 @@ describe('focusProjectCandidateSearch Task', () => {
             expect(nextTask.getSpec().startCursor).to.be.equal("end");
         });
         it('should not return anything, if next page does not exist', function () {
-            const options:any = {};
+            const spec:any = {};
 
             const output:any = {
                 search: {
@@ -156,13 +156,13 @@ describe('focusProjectCandidateSearch Task', () => {
             };
 
             // @ts-ignore
-            let nextTask:Task = new Task(graphql, 0, [], options).nextTask(output);
+            let nextTask:Task = new Task(graphql, 0, [], spec).nextTask(output);
             expect(nextTask).to.be.null;
         });
     });
     describe('#narrowedDownTasks()', function () {
         it('should return tasks, when interval is even', function () {
-            const options:TaskOptions = {
+            const spec:TaskSpec = {
                 id: "deadbeef",
                 parentId: null,
                 originatingTaskId: null,
@@ -176,7 +176,7 @@ describe('focusProjectCandidateSearch Task', () => {
                 startCursor: null,
             };
             // @ts-ignore
-            let tasks:Task[] = new Task(graphql, 0, [], options).narrowedDownTasks();
+            let tasks:Task[] = new Task(graphql, 0, [], spec).narrowedDownTasks();
             expect(tasks).to.be.not.empty;
             expect(tasks).to.have.lengthOf(2);
 
@@ -207,7 +207,7 @@ describe('focusProjectCandidateSearch Task', () => {
             expect(tasks[1].getSpec().createdBefore).to.be.equal("2023-01-10");
         });
         it('should return tasks, when interval is odd', function () {
-            const options:TaskOptions = {
+            const spec:TaskSpec = {
                 id: "deadbeef",
                 parentId: null,
                 originatingTaskId: null,
@@ -221,7 +221,7 @@ describe('focusProjectCandidateSearch Task', () => {
                 startCursor: null,
             };
             // @ts-ignore
-            let tasks:Task[] = new Task(graphql, 0, [], options).narrowedDownTasks();
+            let tasks:Task[] = new Task(graphql, 0, [], spec).narrowedDownTasks();
             expect(tasks).to.be.not.empty;
             expect(tasks).to.have.lengthOf(2);
 
@@ -234,7 +234,7 @@ describe('focusProjectCandidateSearch Task', () => {
             expect(tasks[1].getSpec().createdBefore).to.be.equal("2023-01-11");
         });
         it('should return tasks, for a task with start cursor', function () {
-            const options:TaskOptions = {
+            const spec:TaskSpec = {
                 id: "deadbeef",
                 parentId: "parent",
                 originatingTaskId: "beefdead",
@@ -248,7 +248,7 @@ describe('focusProjectCandidateSearch Task', () => {
                 startCursor: "start",
             };
             // @ts-ignore
-            let tasks:Task[] = new Task(graphql, 0, [], options).narrowedDownTasks();
+            let tasks:Task[] = new Task(graphql, 0, [], spec).narrowedDownTasks();
             expect(tasks).to.be.not.empty;
             expect(tasks).to.have.lengthOf(2);
 
@@ -265,7 +265,7 @@ describe('focusProjectCandidateSearch Task', () => {
             expect(tasks[1].getSpec().createdBefore).to.be.equal("2023-01-02");
         });
         it('should not return anything, for a task with a single day period', function () {
-            const options:TaskOptions = {
+            const spec:TaskSpec = {
                 id: "deadbeef",
                 parentId: "parent",
                 originatingTaskId: "beefdead",
@@ -279,7 +279,7 @@ describe('focusProjectCandidateSearch Task', () => {
                 startCursor: "start",
             };
             // @ts-ignore
-            let tasks:Task[] = new Task(graphql, 0, [], options).narrowedDownTasks();
+            let tasks:Task[] = new Task(graphql, 0, [], spec).narrowedDownTasks();
             expect(tasks).to.be.null;
         });
     });

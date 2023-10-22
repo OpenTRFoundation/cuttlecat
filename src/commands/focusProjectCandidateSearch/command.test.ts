@@ -3,7 +3,7 @@ import {expect} from "chai";
 import {QueueConfig} from "./config";
 import * as log from "../../log";
 import {Command} from "./command";
-import {TaskOptions} from "./task";
+import {TaskSpec} from "./task";
 
 // disable logging for tests
 log.setLevel("warn");
@@ -13,7 +13,7 @@ function fakeNow():Date {
     return parseDate("2023-01-31");
 }
 
-function getKeysSortedByCreatedAfter(unresolved:{ [key:string]:TaskOptions }) {
+function getKeysSortedByCreatedAfter(unresolved:{ [key:string]:TaskSpec }) {
     return Object.keys(unresolved).sort((a, b) => {
         return unresolved[a].createdAfter.localeCompare(unresolved[b].createdAfter);
     });

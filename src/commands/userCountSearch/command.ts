@@ -11,7 +11,7 @@ import {GraphQLProcessCommand, ProcessConfig} from "../graphqlProcessCommand";
 import {createLogger} from "../../log";
 import {GraphqlProcess, GraphqlProcessState} from "../graphqlProcess";
 import FileSystem from "../../fileSystem";
-import {TaskOptions} from "./task";
+import {TaskSpec} from "./task";
 
 const logger = createLogger("userCountSearch/command");
 
@@ -27,7 +27,7 @@ export async function main(mainConfig:Arguments) {
     await new Command(processConfig, newQueueConfig, mainConfig).start();
 }
 
-export class Command extends GraphQLProcessCommand<QueueConfig, TaskOptions, UserCountSearchQuery> {
+export class Command extends GraphQLProcessCommand<QueueConfig, TaskSpec, UserCountSearchQuery> {
     private readonly newQueueConfig:QueueConfig;
 
     constructor(processConfig:ProcessConfig, newQueueConfig:QueueConfig, mainArgs:Arguments) {
@@ -45,7 +45,7 @@ export class Command extends GraphQLProcessCommand<QueueConfig, TaskOptions, Use
 
         logger.info(`Creating a new process state, MIN_REPOS: ${this.newQueueConfig.minRepositories}, MIN_FOLLOWERS: ${this.newQueueConfig.minFollowers}, number of locations: ${locations.length}`);
 
-        let unresolved:{ [key:string]:TaskOptions } = {};
+        let unresolved:{ [key:string]:TaskSpec } = {};
 
         for (let i = 0; i < locations.length; i++) {
             let key = uuidv4();
@@ -72,7 +72,7 @@ export class Command extends GraphQLProcessCommand<QueueConfig, TaskOptions, Use
         }
     }
 
-    createProcess(processState:GraphqlProcessState<QueueConfig, TaskOptions>, taskQueue:TaskQueue<UserCountSearchQuery, TaskOptions>, graphqlWithAuth:typeof graphql, currentRunOutput:any[]):GraphqlProcess<QueueConfig, TaskOptions, UserCountSearchQuery> {
+    createProcess(processState:GraphqlProcessState<QueueConfig, TaskSpec>, taskQueue:TaskQueue<UserCountSearchQuery, TaskSpec>, graphqlWithAuth:typeof graphql, currentRunOutput:any[]):GraphqlProcess<QueueConfig, TaskSpec, UserCountSearchQuery> {
         return new Process(
             processState, taskQueue, graphqlWithAuth, currentRunOutput, {
                 retryCount: this.processConfig.retryCount,
