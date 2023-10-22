@@ -139,10 +139,10 @@ Example call with test data:
 ```shell
 node dist/index.js \
     --command="generate-locations" \
-    --locations-master-file="./src/tasks/locationGeneration/test-data/locations-master.json" \
-    --locations-additional-file="./src/tasks/locationGeneration/test-data/locations-additional.json" \
-    --locations-exclude-file="./src/tasks/locationGeneration/test-data/locations-exclude.json" \
-    --output-file="./src/tasks/locationGeneration/test-data/locations.json"
+    --locations-master-file="./src/commands/locationGeneration/test-data/locations-master.json" \
+    --locations-additional-file="./src/commands/locationGeneration/test-data/locations-additional.json" \
+    --locations-exclude-file="./src/commands/locationGeneration/test-data/locations-exclude.json" \
+    --output-file="./src/commands/locationGeneration/test-data/locations.json"
 ```
 
 ### Command `user-count-search`

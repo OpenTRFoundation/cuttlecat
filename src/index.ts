@@ -9,10 +9,10 @@ import {cwd} from 'process';
 import {SubCommand} from "./subcommand";
 
 const subCommandPaths = [
-    './tasks/focusProjectCandidateSearch/process.js',
-    './tasks/focusProjectCandidateSearch/printLatestFileComplete.js',
-    './tasks/locationGeneration/generate.js',
-    './tasks/userCountSearch/process.js',
+    './commands/focusProjectCandidateSearch/command.js',
+    './commands/focusProjectCandidateSearch/printLatestFileComplete.js',
+    './commands/locationGeneration/generate.js',
+    './commands/userCountSearch/command.js',
 ];
 
 function buildCommands(subCommands:string[]) {

@@ -1,5 +1,5 @@
 import yargs from "yargs/yargs";
-import {commandDescription, commandName} from "./process";
+import {commandDescription, commandName} from "./command";
 
 export interface Config extends QueueConfig, ProcessConfig {
 }

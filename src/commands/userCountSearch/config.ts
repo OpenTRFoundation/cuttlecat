@@ -1,20 +1,8 @@
 import yargs from "yargs/yargs";
-import {commandDescription, commandName} from "./process";
+import {commandDescription, commandName} from "./command";
+import {ProcessConfig} from "../graphqlProcessCommand";
 
 export interface Config extends QueueConfig, ProcessConfig {
-}
-
-export interface ProcessConfig {
-    githubToken:string;
-    dataDirectory:string;
-    renewPeriodInDays:number;
-    concurrency:number;
-    perTaskTimeoutInMs:number;
-    rateLimitStopPercent:number;
-    intervalCap:number;
-    intervalInMs:number;
-    retryCount:number;
-    reportPeriodInMs:number;
 }
 
 export interface QueueConfig {

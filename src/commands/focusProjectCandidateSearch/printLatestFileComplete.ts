@@ -1,7 +1,7 @@
 import {readFileSync} from "fs";
-import {getFileSystem} from "./process";
 import {Arguments} from "../../arguments";
 import yargs from "yargs/yargs";
+import {getFileSystem} from "./command";
 
 export const commandName = "focus-project-candidate-search-complete";
 export const commandDescription = "Checks if the latest focus project candidate search is complete and prints the result in the stdout.";

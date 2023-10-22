@@ -1,9 +1,9 @@
-import {createNewProcessState} from "./process";
 import {TaskOptions} from "./types";
 import {formatDate, parseDate} from "../../utils";
 import {expect} from "chai";
 import {QueueConfig} from "./config";
 import * as log from "../../log";
+import {Command} from "./command";
 
 // disable logging for tests
 log.setLevel("warn");
@@ -32,7 +32,8 @@ describe('focusProjectCandidateSearch unit test', () => {
                 searchPeriodInDays: 1,
                 pageSize: 1,
             };
-            const state = createNewProcessState(config, "foo.json", fakeNow);
+            let command = new Command(<any>{}, config, <any>{});
+            const state = command.createNewProcessState("foo.json", fakeNow);
             expect(state.errored).to.be.empty;
             expect(state.archived).to.be.empty;
             expect(state.resolved).to.be.empty;
@@ -71,7 +72,8 @@ describe('focusProjectCandidateSearch unit test', () => {
                 searchPeriodInDays: 2,
                 pageSize: 1,
             };
-            const state = createNewProcessState(config, "foo.json", fakeNow);
+            let command = new Command(<any>{}, config, <any>{});
+            const state = command.createNewProcessState("foo.json", fakeNow);
             expect(Object.keys(state.unresolved)).to.have.lengthOf(1);
 
             const task = state.unresolved[Object.keys(state.unresolved)[0]];
@@ -90,7 +92,8 @@ describe('focusProjectCandidateSearch unit test', () => {
                 searchPeriodInDays: 1,
                 pageSize: 1,
             };
-            const state = createNewProcessState(config, "foo.json", fakeNow);
+            let command = new Command(<any>{}, config, <any>{});
+            const state = command.createNewProcessState("foo.json", fakeNow);
             expect(Object.keys(state.unresolved)).to.have.lengthOf(2);
 
             // sort by createdAfter to make it easier to test
@@ -117,7 +120,8 @@ describe('focusProjectCandidateSearch unit test', () => {
                 searchPeriodInDays: 5,
                 pageSize: 1,
             };
-            const state = createNewProcessState(config, "foo.json", fakeNow);
+            let command = new Command(<any>{}, config, <any>{});
+            const state = command.createNewProcessState("foo.json", fakeNow);
             expect(Object.keys(state.unresolved)).to.have.lengthOf(6);
 
             // sort by createdAfter to make it easier to test
@@ -144,7 +148,8 @@ describe('focusProjectCandidateSearch unit test', () => {
                 searchPeriodInDays: 7,
                 pageSize: 1,
             };
-            const state = createNewProcessState(config, "foo.json", fakeNow);
+            let command = new Command(<any>{}, config, <any>{});
+            const state = command.createNewProcessState("foo.json", fakeNow);
             expect(Object.keys(state.unresolved)).to.have.lengthOf(2);
 
             // sort by createdAfter to make it easier to test

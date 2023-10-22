@@ -2,8 +2,10 @@ import {QueueConfig} from "./config";
 import {GraphqlProcessState} from "../graphqlProcess";
 import {GraphqlTaskSpec} from "../graphqlTask";
 
+// TODO: empty this file, and move all the types to the right places
+
 // TODO: rename TaskOptions to TaskSpec
-export interface TaskOptions extends GraphqlTaskSpec{
+export interface TaskOptions extends GraphqlTaskSpec {
     location:string;
     minRepos:number;
     minFollowers:number;
