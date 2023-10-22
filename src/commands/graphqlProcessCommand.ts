@@ -44,7 +44,6 @@ export abstract class GraphQLProcessCommand<QueueConfig, TaskSpec extends Graphq
         // these objects will be written to the output file at the end of the run
         const currentRunOutput:any[] = [];
 
-        // TODO: make a field
         const fileSystem = this.getFileSystem(this.processConfig.dataDirectory);
 
         logger.info(`Read process config:` + JSON.stringify(this.processConfig, (key, value) => {

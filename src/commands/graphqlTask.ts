@@ -18,8 +18,6 @@ export interface GraphqlTaskResult {
     } | null;
 }
 
-// TODO: change the order of methods here, super class and subclasses
-
 export abstract class GraphqlTask<ResultType extends GraphqlTaskResult, TaskSpec extends GraphqlTaskSpec> extends BaseTask<ResultType, TaskSpec> {
     protected readonly graphqlWithAuth:typeof graphql<ResultType>;
     protected readonly rateLimitStopPercent:number;
