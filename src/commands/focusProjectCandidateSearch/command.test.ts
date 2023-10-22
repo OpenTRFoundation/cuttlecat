@@ -1,9 +1,9 @@
-import {TaskOptions} from "./types";
 import {formatDate, parseDate} from "../../utils";
 import {expect} from "chai";
 import {QueueConfig} from "./config";
 import * as log from "../../log";
 import {Command} from "./command";
+import {TaskOptions} from "./task";
 
 // disable logging for tests
 log.setLevel("warn");

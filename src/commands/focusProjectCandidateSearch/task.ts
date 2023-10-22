@@ -5,12 +5,24 @@ import {
     FocusProjectCandidateSearchQuery,
     RepositorySummaryFragment
 } from "../../generated/queries";
-import {FileOutput, TaskOptions} from "./types";
 import {formatDate, parseDate, splitPeriodIntoHalves} from "../../utils";
 import {createLogger} from "../../log";
-import {GraphqlTask} from "../graphqlTask";
+import {GraphqlTask, GraphqlTaskSpec} from "../graphqlTask";
+import {FileOutput} from "./process";
 
 const logger = createLogger("focusProjectCandidateSearch/task");
+
+// TODO: rename TaskOptions to TaskSpec
+export interface TaskOptions extends GraphqlTaskSpec {
+    minStars:number;
+    minForks:number;
+    minSizeInKb:number;
+    hasActivityAfter:string;
+    createdAfter:string;
+    createdBefore:string;
+    pageSize:number;
+    startCursor:string | null;
+}
 
 export class Task extends GraphqlTask<FocusProjectCandidateSearchQuery, TaskOptions> {
     private readonly currentRunOutput:FileOutput[];

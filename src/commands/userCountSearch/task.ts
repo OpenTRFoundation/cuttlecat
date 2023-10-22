@@ -1,13 +1,20 @@
 import {graphql} from "@octokit/graphql";
 import {UserCountSearch, UserCountSearchQuery,} from "../../generated/queries";
-import {FileOutput, TaskOptions} from "./types";
 import {createLogger} from "../../log";
-import {GraphqlTask} from "../graphqlTask";
+import {GraphqlTask, GraphqlTaskSpec} from "../graphqlTask";
+import {FileOutput} from "./process";
 
 const logger = createLogger("userCountSearch/task");
 
 // TODO: add docs here and in the other files
 // TODO: also add docs in other commands
+
+// TODO: rename TaskOptions to TaskSpec
+export interface TaskOptions extends GraphqlTaskSpec {
+    location:string;
+    minRepos:number;
+    minFollowers:number;
+}
 
 export class Task extends GraphqlTask<UserCountSearchQuery, TaskOptions> {
     private readonly currentRunOutput:FileOutput[];

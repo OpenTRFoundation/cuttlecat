@@ -1,15 +1,22 @@
 import {graphql} from "@octokit/graphql";
-import {FocusProjectCandidateSearchQuery} from "../../generated/queries";
+import {FocusProjectCandidateSearchQuery, RepositorySummaryFragment} from "../../generated/queries";
 
 import {TaskQueue} from "../../taskqueue";
-import {FileOutput, ProcessState, TaskOptions} from "./types";
-import {Task} from "./task";
+import {Task, TaskOptions} from "./task";
 import {createLogger} from "../../log";
 import {QueueConfig} from "./config";
-import {GraphqlProcess} from "../graphqlProcess";
+import {GraphqlProcess, GraphqlProcessState} from "../graphqlProcess";
 
 const logger = createLogger("focusProjectCandidateSearch/process");
 
+
+export interface ProcessState extends GraphqlProcessState<QueueConfig, TaskOptions> {
+}
+
+export interface FileOutput {
+    taskId:string;  // to identify which task found this result
+    result:RepositorySummaryFragment,
+}
 
 export class Process extends GraphqlProcess<QueueConfig, TaskOptions, FocusProjectCandidateSearchQuery> {
     private readonly graphqlFn:typeof graphql;

@@ -1,9 +1,8 @@
 import {GraphQLProcessCommand, ProcessConfig} from "../graphqlProcessCommand";
 import {buildConfig, Config, extractNewQueueConfig, extractProcessConfig, QueueConfig} from "./config";
-import {ProcessState, TaskOptions} from "./types";
 import {FocusProjectCandidateSearchQuery} from "../../generated/queries";
 import {Arguments} from "../../arguments";
-import {Process} from "./process";
+import {Process, ProcessState} from "./process";
 import {createLogger} from "../../log";
 import {addDays, daysInPeriod, formatDate, parseDate, subtractDays} from "../../utils";
 import {v4 as uuidv4} from "uuid";
@@ -11,6 +10,7 @@ import {shuffle} from "lodash";
 import {TaskQueue} from "../../taskqueue";
 import {graphql} from "@octokit/graphql";
 import FileSystem from "../../fileSystem";
+import {TaskOptions} from "./task";
 
 const logger = createLogger("focusProjectCandidateSearch/command");
 

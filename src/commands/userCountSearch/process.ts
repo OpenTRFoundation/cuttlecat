@@ -2,14 +2,24 @@ import {graphql} from "@octokit/graphql";
 import {UserCountSearchQuery} from "../../generated/queries";
 
 import {TaskQueue} from "../../taskqueue";
-import {FileOutput, ProcessState, TaskOptions} from "./types";
-import {Task} from "./task";
+import {Task, TaskOptions} from "./task";
 import {createLogger} from "../../log";
 import {QueueConfig} from "./config";
-import {GraphqlProcess} from "../graphqlProcess";
+import {GraphqlProcess, GraphqlProcessState} from "../graphqlProcess";
 import {GraphqlTask} from "../graphqlTask";
 
 const logger = createLogger("userCountSearch/process");
+
+export interface ProcessState extends GraphqlProcessState<QueueConfig, TaskOptions> {
+}
+
+export interface FileOutput {
+    taskId:string;  // to identify which task found this result
+    result:{
+        location:string;
+        userCount:number;
+    },
+}
 
 export class Process extends GraphqlProcess<QueueConfig, TaskOptions, UserCountSearchQuery> {
     private readonly graphqlFn:typeof graphql;

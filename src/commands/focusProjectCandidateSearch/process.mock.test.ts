@@ -1,8 +1,7 @@
 import nock from "nock";
 import {graphql} from "@octokit/graphql";
-import {FileOutput, ProcessState, TaskOptions} from "./types";
 import {FocusProjectCandidateSearchQuery} from "../../generated/queries";
-import {Process} from "./process";
+import {FileOutput, Process, ProcessState} from "./process";
 import {TaskQueue} from "../../taskqueue";
 import fetch from "node-fetch";
 import {join} from "path";
@@ -11,6 +10,7 @@ import loadDynamicImports from "../../dynamic-imports";
 import {QueueConfig} from "./config";
 
 import * as log from "../../log";
+import {TaskOptions} from "./task";
 
 // disable logging for tests
 log.setLevel("error");

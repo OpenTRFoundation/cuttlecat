@@ -1,7 +1,6 @@
-import {Task} from "./task";
+import {Task, TaskOptions} from "./task";
 import {graphql} from "@octokit/graphql";
 import {FocusProjectCandidateSearch} from "../../generated/queries";
-import {TaskOptions} from "./types";
 import chai, {expect} from "chai";
 import chaiAsPromised from "chai-as-promised";
 

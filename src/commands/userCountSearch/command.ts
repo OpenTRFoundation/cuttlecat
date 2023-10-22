@@ -1,5 +1,4 @@
 import {buildConfig, Config, extractNewQueueConfig, extractProcessConfig, QueueConfig} from "./config";
-import {ProcessState, TaskOptions} from "./types";
 import {LocationsOutput} from "../locationGeneration/generate";
 import {readFileSync} from "fs";
 import {v4 as uuidv4} from "uuid";
@@ -8,11 +7,12 @@ import {TaskQueue} from "../../taskqueue";
 import {UserCountSearchQuery} from "../../generated/queries";
 import {Arguments} from "../../arguments";
 import {graphql} from "@octokit/graphql";
-import {Process} from "./process";
+import {Process, ProcessState} from "./process";
 import {GraphQLProcessCommand, ProcessConfig} from "../graphqlProcessCommand";
 import {createLogger} from "../../log";
 import {GraphqlProcess, GraphqlProcessState} from "../graphqlProcess";
 import FileSystem from "../../fileSystem";
+import {TaskOptions} from "./task";
 
 const logger = createLogger("userCountSearch/command");
 
