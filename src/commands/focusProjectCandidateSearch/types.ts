@@ -1,11 +1,10 @@
-import {ErroredTask} from "../../taskqueue";
 import {RepositorySummaryFragment} from "../../generated/queries";
 import {QueueConfig} from "./config";
+import {GraphqlProcessState} from "../graphqlProcess";
+import {GraphqlTaskSpec} from "../graphqlTask";
 
-export interface TaskOptions {
-    id:string;
-    parentId:string | null;
-    originatingTaskId:string | null;
+// TODO: rename TaskOptions to TaskSpec
+export interface TaskOptions extends GraphqlTaskSpec {
     minStars:number;
     minForks:number;
     minSizeInKb:number;
@@ -16,16 +15,7 @@ export interface TaskOptions {
     startCursor:string | null;
 }
 
-export interface ProcessState {
-    startingConfig:QueueConfig,
-    unresolved:{ [key:string]:TaskOptions },
-    resolved:{ [key:string]:TaskOptions },
-    errored:{ [key:string]:ErroredTask<TaskOptions> },
-    archived:{ [key:string]:ErroredTask<TaskOptions> },
-    startDate:Date,
-    completionDate:Date | null,
-    completionError:string | null,
-    outputFileName:string,
+export interface ProcessState extends GraphqlProcessState<QueueConfig, TaskOptions> {
 }
 
 export interface FileOutput {

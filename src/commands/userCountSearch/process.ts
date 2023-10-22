@@ -14,6 +14,8 @@ import {createLogger} from "../../log";
 import {LocationsOutput} from "../locationGeneration/generate";
 import {Arguments} from "../../arguments";
 import {buildConfig, Config, extractNewQueueConfig, extractProcessConfig, QueueConfig} from "./config";
+import {GraphqlProcess} from "../graphqlProcess";
+import {GraphqlTask} from "../graphqlTask";
 
 const logger = createLogger("userCountSearch/process");
 
@@ -25,70 +27,23 @@ export async function main(mainConfig:Arguments) {
     await start(mainConfig, config);
 }
 
-
-export class Process {
-    private readonly processState:ProcessState;
-    private readonly taskQueue:TaskQueue<UserCountSearchQuery, TaskOptions>;
+export class Process extends GraphqlProcess<QueueConfig, TaskOptions, UserCountSearchQuery> {
     private readonly graphqlFn:typeof graphql;
     private readonly currentRunOutput:FileOutput[];
-    private readonly options:{
-        retryCount:number,
-        rateLimitStopPercent:number,
-    };
 
     constructor(processState:ProcessState, taskQueue:TaskQueue<UserCountSearchQuery, TaskOptions>, graphqlFn:typeof graphql, currentRunOutput:FileOutput[], options:{
         retryCount:number;
         rateLimitStopPercent:number
     }) {
-        this.processState = processState;
-        this.taskQueue = taskQueue;
+        super(processState, taskQueue, options);
         this.graphqlFn = graphqlFn;
         this.currentRunOutput = currentRunOutput;
-        this.options = options;
     }
 
-    initialize() {
-        // Queue already retries any errored items, until they fail for RETRY_COUNT times.
-        // Afterward, queue will only keep the errored items in the errored list, and remove them from the unresolved list.
-        // So, we don't actually need to check the errored list here.
-        // However, when the RETRY_COUNT is increased, we should retry the errored tasks from the previous run.
-        logger.info("Checking if the errored tasks should be retried, according to RETRY_COUNT.")
-        for (let key in this.processState.errored) {
-            let erroredTask = this.processState.errored[key];
-            if (this.processState.unresolved[erroredTask.task.id]) {
-                // errored task is already in the unresolved list, and it will be retried by the queue.
-                continue;
-            }
-
-            if (erroredTask.errors.length < this.options.retryCount + 1) {    // +1 since retry count is not the same as the number of errors
-                logger.debug(`Going to retry errored task: ${erroredTask.task.id} as it has ${erroredTask.errors.length} errors, and RETRY_COUNT is ${this.options.retryCount}`);
-                this.processState.unresolved[erroredTask.task.id] = erroredTask.task;
-                // keep in unresolved though, as it will be retried by the task queue
-            }
-        }
-
-        for (let key in this.processState.unresolved) {
-            const task = new Task(this.graphqlFn, this.options.rateLimitStopPercent, this.currentRunOutput, this.processState.unresolved[key]);
-            logger.debug(`Adding task to queue: ${task.getId()}`);
-            // DO NOT await here, as it will block the loop
-            // fire and forget.
-            // the task will be added to the queue, and the queue will start executing it.
-            // noinspection ES6MissingAwait
-            this.taskQueue.add(task);
-        }
+    protected createNewTask(taskSpec:TaskOptions):GraphqlTask<UserCountSearchQuery, TaskOptions> {
+        return new Task(this.graphqlFn, this.options.rateLimitStopPercent, this.currentRunOutput, taskSpec);
     }
 
-    async start() {
-        logger.info("Starting the task queue");
-        this.taskQueue.start();
-        try {
-            await this.taskQueue.finish();
-        } catch (e) {
-            logger.error(`Error while finishing the task queue: ${e}`);
-            logger.error(e);
-        }
-        logger.info("Task queue finished");
-    }
 }
 
 export function createNewProcessState(startingConfig:QueueConfig, outputFileName:string, nowFn:() => Date):ProcessState {
