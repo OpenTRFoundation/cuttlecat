@@ -1,5 +1,5 @@
 import yargs from "yargs/yargs";
-import {commandDescription, commandName} from "./command";
+import {CommandDefinition} from "./command";
 
 export interface Config extends QueueConfig, ProcessConfig {
 }
@@ -38,9 +38,9 @@ export function buildConfig():Config {
         "The values passed as arguments will be ignored in that case.";
 
     return yargs(process.argv.slice(2))
-        .usage(`Usage: $0 ${commandName} [options]`)
+        .usage(`Usage: $0 ${CommandDefinition.commandName} [options]`)
         .usage(`Run $0 --help for help on common options.`)
-        .usage(commandDescription)
+        .usage(CommandDefinition.commandDescription)
         .options({
             // persisted
             "github-token": {

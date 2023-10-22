@@ -10,26 +10,28 @@ import {TaskQueue} from "../../taskqueue";
 import {graphql} from "@octokit/graphql";
 import FileSystem from "../../fileSystem";
 import {TaskSpec} from "./task";
+import {SubCommand} from "../../subcommand";
 
 const logger = createLogger("focusProjectCandidateSearch/command");
 
-export const commandName = "focus-project-candidate-search";
-export const commandDescription = "Search for repositories that can be used to identify focus organizations and projects.";
+export const CommandDefinition:SubCommand = {
+    commandName: "focus-project-candidate-search",
+    commandDescription: "Search for repositories that can be used to identify focus organizations and projects.",
 
-export async function main(mainConfig:Arguments) {
-    const config:Config = buildConfig();
-    const processConfig = extractProcessConfig(config);
-    const newQueueConfig = extractNewQueueConfig(config);
+    main: async function (mainConfig:Arguments) {
+        const config:Config = buildConfig();
+        const processConfig = extractProcessConfig(config);
+        const newQueueConfig = extractNewQueueConfig(config);
 
-    await new Command(processConfig, newQueueConfig, mainConfig).start();
+        await new Command(processConfig, newQueueConfig, mainConfig).start();
+    }
 }
-
 
 export class Command extends GraphQLProcessCommand<QueueConfig, TaskSpec, FocusProjectCandidateSearchQuery> {
     private readonly newQueueConfig:QueueConfig;
 
     constructor(processConfig:ProcessConfig, newQueueConfig:QueueConfig, mainArgs:Arguments) {
-        super(commandName, processConfig, mainArgs);
+        super(CommandDefinition.commandName, processConfig, mainArgs);
         this.newQueueConfig = newQueueConfig;
     }
 

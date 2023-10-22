@@ -1,5 +1,5 @@
 import {buildConfig, Config, extractNewQueueConfig, extractProcessConfig, QueueConfig} from "./config";
-import {LocationsOutput} from "../locationGeneration/generate";
+import {LocationsOutput} from "../locationGeneration/command";
 import {readFileSync} from "fs";
 import {v4 as uuidv4} from "uuid";
 import {TaskQueue} from "../../taskqueue";
@@ -12,26 +12,28 @@ import {createLogger} from "../../log";
 import {GraphqlProcess, GraphqlProcessState} from "../graphqlProcess";
 import FileSystem from "../../fileSystem";
 import {TaskSpec} from "./task";
+import {SubCommand} from "../../subcommand";
 
 const logger = createLogger("userCountSearch/command");
 
-// TODO: create an interface for these constants
-export const commandName = "user-count-search";
-export const commandDescription = "Search for user counts for given search criteria.";
+export const CommandDefinition:SubCommand = {
+    commandName: "user-count-search",
+    commandDescription: "Search for user counts for given search criteria.",
 
-export async function main(mainConfig:Arguments) {
-    const config:Config = buildConfig();
-    const processConfig = extractProcessConfig(config);
-    const newQueueConfig = extractNewQueueConfig(config);
+    main: async function (mainConfig:Arguments) {
+        const config:Config = buildConfig();
+        const processConfig = extractProcessConfig(config);
+        const newQueueConfig = extractNewQueueConfig(config);
 
-    await new Command(processConfig, newQueueConfig, mainConfig).start();
+        await new Command(processConfig, newQueueConfig, mainConfig).start();
+    }
 }
 
 export class Command extends GraphQLProcessCommand<QueueConfig, TaskSpec, UserCountSearchQuery> {
     private readonly newQueueConfig:QueueConfig;
 
     constructor(processConfig:ProcessConfig, newQueueConfig:QueueConfig, mainArgs:Arguments) {
-        super(commandName, processConfig, mainArgs);
+        super(CommandDefinition.commandName, processConfig, mainArgs);
         this.newQueueConfig = newQueueConfig;
     }
 

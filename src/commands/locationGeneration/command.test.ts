@@ -1,11 +1,12 @@
 import {join} from "path";
 import expectedOutput from './test-data/locations-expected.json';
 import assert from "assert";
+import {start} from "./command";
 
 describe('locationGeneration', () => {
     describe('#main()', function () {
         it('should generate proper output', function () {
-            require("./generate").start({
+            start({
                 locationsMasterFile: join(__dirname, "test-data", "locations-master.json"),
                 locationsAdditionalFile: join(__dirname, "test-data", "locations-additional.json"),
                 locationsExcludeFile: join(__dirname, "test-data", "locations-exclude.json"),

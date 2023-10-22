@@ -1,13 +1,17 @@
 import {readFileSync, writeFileSync} from "fs";
 import {Arguments} from "../../arguments";
 import {buildConfig, Config} from "./config";
+import {SubCommand} from "../../subcommand";
 
-export const commandName = "generate-locations";
-export const commandDescription = "Generate a JSON file with location information that is to be used in various searches and processes.";
 
-export async function main(mainConfig:Arguments) {
-    const config = buildConfig();
-    await start(config);
+export const CommandDefinition:SubCommand = {
+    commandName: "generate-locations",
+    commandDescription: "Generate a JSON file with location information that is to be used in various searches and processes.",
+
+    main: async function (mainConfig:Arguments) {
+        const config = buildConfig();
+        await start(config);
+    }
 }
 
 type LocationsMaster = Array<string>;

@@ -8,34 +8,21 @@ import * as log from "./log";
 import {cwd} from 'process';
 import {SubCommand} from "./subcommand";
 
-const subCommandPaths = [
-    './commands/focusProjectCandidateSearch/command.js',
-    './commands/focusProjectCandidateSearch/printLatestFileComplete.js',
-    './commands/locationGeneration/generate.js',
-    './commands/userCountSearch/command.js',
-];
-
-function buildCommands(subCommands:string[]) {
+function buildCommands() {
     const commands:{ [key:string]:SubCommand } = {};
 
-    for (let subCommand of subCommands) {
-        const module = require(subCommand);
-        if (!module.commandName) {
-            throw new Error(`Module ${subCommand} must export a commandName`);
+    function registerCommand(commandDefinition:SubCommand) {
+        if (!commandDefinition) {
+            throw new Error(`CommandDefinition is null`);
         }
-        if (!module.commandDescription) {
-            throw new Error(`Module ${subCommand} must export a commandDescription`);
-        }
-        if (!module.main) {
-            throw new Error(`Module ${subCommand} must export a main function`);
-        }
-
-        commands[module.commandName] = {
-            commandName: module.commandName,
-            commandDescription: module.commandDescription,
-            main: module.main,
-        };
+        commands[commandDefinition.commandName] = commandDefinition;
     }
+
+    registerCommand(require("./commands/focusProjectCandidateSearch/command.js").CommandDefinition);
+    registerCommand(require("./commands/focusProjectCandidateSearch/printLatestFileComplete.js").CommandDefinition);
+    registerCommand(require("./commands/locationGeneration/command.js").CommandDefinition);
+    registerCommand(require("./commands/userCountSearch/command.js").CommandDefinition);
+
     return commands;
 }
 
@@ -43,7 +30,7 @@ function buildCommands(subCommands:string[]) {
 async function main() {
     await loadDynamicImports();
 
-    const subCommands = buildCommands(subCommandPaths);
+    const subCommands = buildCommands();
     const args = buildArguments(subCommands);
 
     log.setLevel(args.logLevel);

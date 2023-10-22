@@ -1,5 +1,5 @@
 import yargs from "yargs/yargs";
-import {commandDescription, commandName} from "./generate";
+import {CommandDefinition} from "./command";
 
 export interface Config {
     locationsMasterFile:string;
@@ -10,9 +10,9 @@ export interface Config {
 
 export function buildConfig():Config {
     return yargs(process.argv.slice(2))
-        .usage(`Usage: $0 ${commandName} [options]`)
+        .usage(`Usage: $0 ${CommandDefinition.commandName} [options]`)
         .usage(`Run $0 --help for help on common options.`)
-        .usage(commandDescription)
+        .usage(CommandDefinition.commandDescription)
         .options({
             "locations-master-file": {
                 type: "string",

@@ -1,7 +1,7 @@
 import {Arguments} from "./arguments";
 
-export interface SubCommand {
-    commandName:string,
-    commandDescription:string,
-    main:(args:Arguments) => Promise<void>,
+export type SubCommand = {
+    readonly commandName:string,
+    readonly commandDescription:string,
+    readonly main:(args:Arguments) => Promise<void>,
 }
