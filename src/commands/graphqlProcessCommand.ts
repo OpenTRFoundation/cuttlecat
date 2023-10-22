@@ -9,6 +9,7 @@ import {createLogger} from "../log";
 import {Arguments} from "../arguments";
 import {GraphqlProcess, GraphqlProcessState} from "./graphqlProcess";
 import {GraphqlTaskResult, GraphqlTaskSpec} from "./graphqlTask";
+import {shuffle} from "lodash";
 
 const logger = createLogger("graphqlProcessCommand");
 
@@ -203,9 +204,29 @@ export abstract class GraphQLProcessCommand<QueueConfig, TaskSpec extends Graphq
         logger.info(`---- Task store      : unresolved: ${Object.keys(processState.unresolved).length}, resolved: ${Object.keys(processState.resolved).length}, errored: ${Object.keys(processState.errored).length}, archived: ${Object.keys(processState.archived).length}`);
     }
 
+    createNewProcessState(outputFileName:string, nowFn:() => Date):GraphqlProcessState<QueueConfig, TaskSpec> {
+        let state = this.doCreateNewProcessState(outputFileName, nowFn);
+
+        let tasks:TaskSpec[] = Object.values(state.unresolved);
+
+        // tasks for criteria return lots of data and some return very little data.
+        // let's shuffle to have a more even distribution of request durations.
+        tasks = shuffle(tasks);
+
+        state.unresolved = {};
+
+        for (let i = 0; i < tasks.length; i++) {
+            const task = tasks[i];
+            state.unresolved[task.id] = task;
+            logger.debug(`Created unresolved task: ${JSON.stringify(task)}`);
+        }
+
+        return state;
+    }
+
     abstract getFileSystem(dataDirectory:string):FileSystem;
 
-    abstract createNewProcessState(outputFileName:string, nowFn:() => Date):GraphqlProcessState<QueueConfig, TaskSpec>;
+    abstract doCreateNewProcessState(outputFileName:string, nowFn:() => Date):GraphqlProcessState<QueueConfig, TaskSpec>;
 
     abstract createProcess(processState:GraphqlProcessState<QueueConfig, TaskSpec>, taskQueue:TaskQueue<ResultType, TaskSpec>, graphqlWithAuth:typeof graphql, currentRunOutput:any[]):GraphqlProcess<QueueConfig, TaskSpec, ResultType>;
 }

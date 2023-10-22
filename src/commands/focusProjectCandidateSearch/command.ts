@@ -6,7 +6,6 @@ import {Process, ProcessState} from "./process";
 import {createLogger} from "../../log";
 import {addDays, daysInPeriod, formatDate, parseDate, subtractDays} from "../../utils";
 import {v4 as uuidv4} from "uuid";
-import {shuffle} from "lodash";
 import {TaskQueue} from "../../taskqueue";
 import {graphql} from "@octokit/graphql";
 import FileSystem from "../../fileSystem";
@@ -34,7 +33,7 @@ export class Command extends GraphQLProcessCommand<QueueConfig, TaskOptions, Foc
         this.newQueueConfig = newQueueConfig;
     }
 
-    createNewProcessState(outputFileName:string, nowFn:() => Date):ProcessState {
+    doCreateNewProcessState(outputFileName:string, nowFn:() => Date):ProcessState {
         let startDate = parseDate(this.newQueueConfig.excludeRepositoriesCreatedBefore);
         let endDate = subtractDays(nowFn(), this.newQueueConfig.minAgeInDays);
 
@@ -71,13 +70,13 @@ export class Command extends GraphQLProcessCommand<QueueConfig, TaskOptions, Foc
 
         logger.info(`Creating a new process state, startDate: ${formatDate(startDate)}, endDate: ${formatDate(endDate)}, hasActivityAfter: ${hasActivityAfter}`);
 
-        let newTasks:TaskOptions[] = [];
+        let unresolved:{ [key:string]:TaskOptions } = {};
 
         for (let i = 0; i < interval.length; i++) {
             let createdAfter = formatDate(interval[i]);
             let createdBefore = formatDate(addDays(interval[i], this.newQueueConfig.searchPeriodInDays - 1));
             let key = uuidv4();
-            newTasks.push({
+            unresolved[key] = {
                 id: key,
                 parentId: null,
                 originatingTaskId: null,
@@ -89,19 +88,7 @@ export class Command extends GraphQLProcessCommand<QueueConfig, TaskOptions, Foc
                 createdBefore: createdBefore,
                 pageSize: this.newQueueConfig.pageSize,
                 startCursor: null,
-            });
-        }
-
-        // TODO: do this shuffling in parent class
-        // tasks for some date ranges return lots of data and some return very little data.
-        // let's shuffle to have a more even distribution of request durations.
-        newTasks = shuffle(newTasks);
-
-        let unresolved:{ [key:string]:TaskOptions } = {};
-        for (let i = 0; i < newTasks.length; i++) {
-            const task = newTasks[i];
-            unresolved[task.id] = task;
-            logger.debug(`Created unresolved task: ${JSON.stringify(task)}`);
+            };
         }
 
         return {

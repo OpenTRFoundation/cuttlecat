@@ -2,7 +2,6 @@ import {buildConfig, Config, extractNewQueueConfig, extractProcessConfig, QueueC
 import {LocationsOutput} from "../locationGeneration/generate";
 import {readFileSync} from "fs";
 import {v4 as uuidv4} from "uuid";
-import {shuffle} from "lodash";
 import {TaskQueue} from "../../taskqueue";
 import {UserCountSearchQuery} from "../../generated/queries";
 import {Arguments} from "../../arguments";
@@ -36,7 +35,7 @@ export class Command extends GraphQLProcessCommand<QueueConfig, TaskOptions, Use
         this.newQueueConfig = newQueueConfig;
     }
 
-    createNewProcessState(outputFileName:string, nowFn:() => Date):ProcessState {
+    doCreateNewProcessState(outputFileName:string, nowFn:() => Date):ProcessState {
         // read JSON file and create an entry for each location
         const locationsOutput:LocationsOutput = JSON.parse(readFileSync(this.newQueueConfig.locationJsonFile, "utf8"));
         const locations:string[] = [];
@@ -46,28 +45,18 @@ export class Command extends GraphQLProcessCommand<QueueConfig, TaskOptions, Use
 
         logger.info(`Creating a new process state, MIN_REPOS: ${this.newQueueConfig.minRepositories}, MIN_FOLLOWERS: ${this.newQueueConfig.minFollowers}, number of locations: ${locations.length}`);
 
-        let newTasks:TaskOptions[] = [];
+        let unresolved:{ [key:string]:TaskOptions } = {};
 
         for (let i = 0; i < locations.length; i++) {
             let key = uuidv4();
-            newTasks.push({
+            unresolved[key] = {
                 id: key,
                 parentId: null,
                 originatingTaskId: null,
                 location: locations[i],
                 minRepos: this.newQueueConfig.minRepositories,
                 minFollowers: this.newQueueConfig.minFollowers,
-            });
-        }
-
-        // let's shuffle to have a more even distribution of request durations.
-        newTasks = shuffle(newTasks);
-
-        let unresolved:{ [key:string]:TaskOptions } = {};
-        for (let i = 0; i < newTasks.length; i++) {
-            const task = newTasks[i];
-            unresolved[task.id] = task;
-            logger.debug(`Created unresolved task: ${JSON.stringify(task)}`);
+            };
         }
 
         return {
