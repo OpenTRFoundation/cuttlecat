@@ -6,6 +6,9 @@ import {GraphqlTask} from "../graphqlTask";
 
 const logger = createLogger("userCountSearch/task");
 
+// TODO: add docs here and in the other files
+// TODO: also add docs in other commands
+
 export class Task extends GraphqlTask<UserCountSearchQuery, TaskOptions> {
     private readonly currentRunOutput:FileOutput[];
 
@@ -25,14 +28,6 @@ export class Task extends GraphqlTask<UserCountSearchQuery, TaskOptions> {
         };
     }
 
-    nextTask(output:UserCountSearchQuery):Task | null {
-        return null;
-    }
-
-    narrowedDownTasks():Task[] | null {
-        return null;
-    }
-
     saveOutput(output:UserCountSearchQuery):void {
         logger.debug(`Saving output of the task: ${this.getId()}`);
 
@@ -48,6 +43,14 @@ export class Task extends GraphqlTask<UserCountSearchQuery, TaskOptions> {
     shouldRecordAsError(error:any):boolean {
         // there can't be partial responses here, so, let's return true, so that the queue can retry this task
         return true;
+    }
+
+    nextTask(output:UserCountSearchQuery):Task | null {
+        return null;
+    }
+
+    narrowedDownTasks():Task[] | null {
+        return null;
     }
 
     protected getGraphqlQuery():string {

@@ -94,6 +94,8 @@ export abstract class BaseTask<ResultType, TaskSpec> implements Task<ResultType,
 
     abstract getId():string;
 
+    abstract getSpec():TaskSpec;
+
     abstract setParentId(id:string):void;
 
     abstract setOriginatingTaskId(id:string):void;
@@ -101,8 +103,6 @@ export abstract class BaseTask<ResultType, TaskSpec> implements Task<ResultType,
     abstract execute(signal?:AbortSignal):Promise<ResultType>;
 
     abstract nextTask(result:ResultType):BaseTask<ResultType, TaskSpec> | null;
-
-    abstract getSpec():TaskSpec;
 
     abstract saveOutput(output:ResultType):void;
 
