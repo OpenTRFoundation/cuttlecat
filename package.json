@@ -25,8 +25,9 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "npm run build && node dist/index.js",
-    "build": "rimraf ./dist && npm run codegen && tsc",
-    "test": "npm run build && mocha --require ts-node/register ./src/**/*.test.ts",
+    "build": "rimraf ./dist && npm run codegen && tsc && npm run postbuild",
+    "postbuild": "cpy 'src/**/*.json' 'dist'",
+    "test": "npm run build && mocha --require ts-node/register './src/**/*.test.ts' --recursive",
     "codegen": "graphql-codegen --config codegen.ts"
   },
   "devDependencies": {
@@ -47,6 +48,7 @@
     "@types/yargs": "^17.0.29",
     "chai": "^4.3.10",
     "chai-as-promised": "^7.1.1",
+    "cpy-cli": "^5.0.0",
     "mocha": "^10.2.0",
     "rimraf": "^5.0.1",
     "ts-node": "^10.9.1",
