@@ -39,19 +39,7 @@ export abstract class GraphqlProcess<QueueConfig, TaskSpec extends GraphqlTaskSp
         // So, we don't actually need to check the errored list here.
         // However, when the RETRY_COUNT is increased, we should retry the errored tasks from the previous run.
         logger.info("Checking if the errored tasks should be retried, according to RETRY_COUNT.")
-        for (let key in this.processState.errored) {
-            let erroredTask = this.processState.errored[key];
-            if (this.processState.unresolved[erroredTask.task.id]) {
-                // errored task is already in the unresolved list, and it will be retried by the queue.
-                continue;
-            }
-
-            if (erroredTask.errors.length < this.options.retryCount + 1) {    // +1 since retry count is not the same as the number of errors
-                logger.debug(`Going to retry errored task: ${erroredTask.task.id} as it has ${erroredTask.errors.length} errors, and RETRY_COUNT is ${this.options.retryCount}`);
-                this.processState.unresolved[erroredTask.task.id] = erroredTask.task;
-                // keep in unresolved though, as it will be retried by the task queue
-            }
-        }
+        addErroredToUnresolved(this.processState.errored, this.processState.unresolved, this.options.retryCount);
 
         for (let key in this.processState.unresolved) {
             const task = this.createNewTask(this.processState.unresolved[key]);
@@ -77,4 +65,23 @@ export abstract class GraphqlProcess<QueueConfig, TaskSpec extends GraphqlTaskSp
     }
 
     protected abstract createNewTask(taskSpec:TaskSpec):GraphqlTask<ResultType, TaskSpec>;
+}
+
+export function addErroredToUnresolved<TaskSpec extends GraphqlTaskSpec>(
+    errored:{ [key:string]:ErroredTask<TaskSpec> },
+    unresolved:{ [key:string]:TaskSpec },
+    retryCount:number) {
+    for (let key in errored) {
+        let erroredTask = errored[key];
+        if (unresolved[erroredTask.task.id]) {
+            // errored task is already in the unresolved list, and it will be retried by the queue.
+            continue;
+        }
+
+        if (erroredTask.errors.length < retryCount + 1) {    // +1 since retry count is not the same as the number of errors
+            logger.debug(`Going to retry errored task: ${erroredTask.task.id} as it has ${erroredTask.errors.length} errors, and RETRY_COUNT is ${retryCount}`);
+            unresolved[erroredTask.task.id] = erroredTask.task;
+            // keep in unresolved though, as it will be retried by the task queue
+        }
+    }
 }

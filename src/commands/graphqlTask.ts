@@ -3,7 +3,7 @@ import {graphql} from "@octokit/graphql";
 
 import {createLogger} from "../log";
 
-const logger = createLogger("graphQLtask");
+const logger = createLogger("graphqlTask");
 
 export interface GraphqlTaskSpec {
     id:string;

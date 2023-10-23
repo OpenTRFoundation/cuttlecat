@@ -1,6 +1,5 @@
 import {existsSync, readdirSync} from "fs";
 import {join} from "path";
-import {nowTimestamp} from "./utils";
 
 export default class FileSystem {
     private readonly dataDirectoryPath:string;
@@ -33,13 +32,11 @@ export default class FileSystem {
         return join(this.dataDirectoryPath, files[files.length - 1]);
     }
 
-    getPathOfNewProcessStateFile() {
-        const timestamp = nowTimestamp();
+    getPathOfNewProcessStateFile(timestamp:string) {
         return join(this.dataDirectoryPath, this.processStateFilePrefix + timestamp + this.processStateFileExtension);
     }
 
-    getNewProcessOutputFileName() {
-        const timestamp = nowTimestamp();
+    getNewProcessOutputFileName(timestamp:string) {
         return this.processOutputFilePrefix + timestamp + this.processOutputFileExtension;
     }
 

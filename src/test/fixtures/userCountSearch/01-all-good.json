@@ -1,0 +1,60 @@
+[
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query UserCountSearch($searchString: String!) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: USER, query: $searchString, first: 1) {\n    userCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "location:Turkey repos:>=50 followers:>=50"
+      }
+    },
+    "status": 200,
+    "response": {
+      "data": {
+        "rateLimit": {
+          "limit": 1000,
+          "remaining": 999,
+          "used": 1
+        },
+        "search": {
+          "userCount": 100
+        }
+      }
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  },
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query UserCountSearch($searchString: String!) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: USER, query: $searchString, first: 1) {\n    userCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "location:Adana repos:>=50 followers:>=50"
+      }
+    },
+    "status": 200,
+    "response": {
+      "data": {
+        "rateLimit": {
+          "limit": 1000,
+          "remaining": 998,
+          "used": 2
+        },
+        "search": {
+          "userCount": 1
+        }
+      }
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  }
+]

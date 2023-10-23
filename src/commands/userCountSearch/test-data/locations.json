@@ -1,0 +1,17 @@
+{
+  "Turkey": {
+    "text": "Turkey",
+    "parent": null,
+    "alternatives": [
+      "Turkey",
+      "TR"
+    ]
+  },
+  "Adana": {
+    "text": "Adana",
+    "parent": "Turkey",
+    "alternatives": [
+      "Adana"
+    ]
+  }
+}

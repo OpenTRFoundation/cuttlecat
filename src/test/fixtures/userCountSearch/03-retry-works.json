@@ -1,0 +1,135 @@
+[
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query UserCountSearch($searchString: String!) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: USER, query: $searchString, first: 1) {\n    userCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "location:Turkey repos:>=50 followers:>=50"
+      }
+    },
+    "status": 200,
+    "response": {
+      "data": {
+        "rateLimit": {
+          "limit": 1000,
+          "remaining": 999,
+          "used": 1
+        },
+        "search": {
+          "userCount": 100
+        }
+      }
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  },
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query UserCountSearch($searchString: String!) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: USER, query: $searchString, first: 1) {\n    userCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "location:Adana repos:>=50 followers:>=50"
+      }
+    },
+    "status": 502,
+    "response": {
+      "data": null,
+      "errors": [
+        {
+          "message": "Something went wrong while executing your query. This may be the result of a timeout, or it could be a GitHub bug. Please include `6445:9E27:1037D0:21317D:65303BF2` when reporting this issue."
+        }
+      ]
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  },
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query UserCountSearch($searchString: String!) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: USER, query: $searchString, first: 1) {\n    userCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "location:Adana repos:>=50 followers:>=50"
+      }
+    },
+    "status": 502,
+    "response": {
+      "data": null,
+      "errors": [
+        {
+          "message": "Something went wrong while executing your query. This may be the result of a timeout, or it could be a GitHub bug. Please include `6445:9E27:1037D0:21317D:65303BF2` when reporting this issue."
+        }
+      ]
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  },
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query UserCountSearch($searchString: String!) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: USER, query: $searchString, first: 1) {\n    userCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "location:Adana repos:>=50 followers:>=50"
+      }
+    },
+    "status": 502,
+    "response": {
+      "data": null,
+      "errors": [
+        {
+          "message": "Something went wrong while executing your query. This may be the result of a timeout, or it could be a GitHub bug. Please include `6445:9E27:1037D0:21317D:65303BF2` when reporting this issue."
+        }
+      ]
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  },
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\n    query UserCountSearch($searchString: String!) {\n  rateLimit {\n    cost\n    limit\n    nodeCount\n    remaining\n    resetAt\n    used\n  }\n  search(type: USER, query: $searchString, first: 1) {\n    userCount\n  }\n}\n    ",
+      "variables": {
+        "searchString": "location:Adana repos:>=50 followers:>=50"
+      }
+    },
+    "status": 200,
+    "response": {
+      "data": {
+        "rateLimit": {
+          "limit": 1000,
+          "remaining": 995,
+          "used": 5
+        },
+        "search": {
+          "userCount": 1
+        }
+      }
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  }
+]

@@ -2,7 +2,7 @@ import {graphql} from "@octokit/graphql";
 import {createWriteStream, readFileSync, writeFileSync} from 'fs'
 
 import {TaskQueue} from "../taskqueue";
-import {now as getNow} from "../utils";
+import {formatTimeStamp, now as getNow} from "../utils";
 import FileSystem from "../fileSystem";
 import fetch from "node-fetch";
 import {createLogger} from "../log";
@@ -57,37 +57,11 @@ export abstract class GraphQLProcessCommand<QueueConfig, TaskSpec extends Graphq
             return value;
         }));
 
-        let processState:GraphqlProcessState<QueueConfig, TaskSpec>;
+        const {stateFile, processState} = this.getOrCreateLatestProcessState(fileSystem, getNow);
 
-        let stateFile = fileSystem.getLatestProcessStateFile();
-        if (stateFile == null) {
-            stateFile = fileSystem.getPathOfNewProcessStateFile();
-            logger.info(`There are no process state files, starting a new process. Path of state file will be: ${stateFile}`);
-            processState = this.createNewProcessState(fileSystem.getNewProcessOutputFileName(), getNow);
-        } else {
-            logger.info(`Found latest process state file: ${stateFile}`)
-            processState = JSON.parse(readFileSync(stateFile, "utf8"));
-        }
-
-        logger.debug(`Latest process state: ${JSON.stringify(processState)}`);
-
-        if (processState.completionDate) {
-            // convert to date
-            processState.completionDate = new Date(processState.completionDate);
-
-            logger.info("Previous queue is completed.");
-            // start a new one, but only if RENEW_PERIOD_IN_DAYS has passed
-            const now = getNow();
-            const daysSinceCompletion = (now.getTime() - processState.completionDate.getTime()) / (1000 * 60 * 60 * 24);
-            if (daysSinceCompletion < this.processConfig.renewPeriodInDays) {
-                logger.info(`Previous process is completed, but RENEW_PERIOD_IN_DAYS of ${this.processConfig.renewPeriodInDays} hasn't passed yet. It has been ${daysSinceCompletion} days. Exiting.`);
-                return;
-            }
-            logger.info("Previous queue is completed, and RENEW_PERIOD_IN_DAYS has passed. Starting a new queue.");
-            stateFile = fileSystem.getPathOfNewProcessStateFile();
-            processState = this.createNewProcessState(fileSystem.getNewProcessOutputFileName(), getNow);
-            logger.info(`New process state file: ${stateFile}`);
-            logger.debug(`New process state: ${JSON.stringify(processState)}`);
+        if (!stateFile) {
+            logger.info("No new process to start. Exiting.");
+            return;
         }
 
         logger.info("Starting the search now...");
@@ -154,11 +128,22 @@ export abstract class GraphQLProcessCommand<QueueConfig, TaskSpec extends Graphq
             }
         })();
 
+        // wait until the process is finished
         await process.start();
 
+        this.checkFileCompleted(processState, getNow);
+
+        // do a final report before ending
+        this.reportTaskQueue(taskQueue, processState);
+
+        // Write to both of the files when queue is aborted too, so we can pick up from where we left off.
+        this.saveProcessRunOutput(fileSystem, stateFile, processState, currentRunOutput);
+    }
+
+    checkFileCompleted(processState:GraphqlProcessState<QueueConfig, TaskSpec>, nowFn:() => Date) {
         if (Object.keys(processState.unresolved).length === 0) {
             // no unresolved tasks, so the queue is completed.
-            processState.completionDate = getNow();
+            processState.completionDate = nowFn();
 
             // However, there might be some errored tasks.
             // TaskQueue itself is retrying those tasks, and it finishes if it gives up after N retries.
@@ -169,12 +154,50 @@ export abstract class GraphQLProcessCommand<QueueConfig, TaskSpec extends Graphq
                 processState.completionError = "Errored tasks";
             }
         }
+    }
 
-        // do a final report before ending
-        this.reportTaskQueue(taskQueue, processState);
+    getOrCreateLatestProcessState(fileSystem:FileSystem, nowFn:() => Date) {
+        const now = nowFn();
+        const timestamp = formatTimeStamp(now);
 
-        // Write to both of the files when queue is aborted too, so we can pick up from where we left off.
-        this.saveProcessRunOutput(fileSystem, stateFile, processState, currentRunOutput);
+        let processState:GraphqlProcessState<QueueConfig, TaskSpec>;
+        let stateFile = fileSystem.getLatestProcessStateFile();
+
+        if (stateFile == null) {
+            stateFile = fileSystem.getPathOfNewProcessStateFile(timestamp);
+            logger.info(`There are no process state files, starting a new process. Path of state file will be: ${stateFile}`);
+            processState = this.createNewProcessState(fileSystem.getNewProcessOutputFileName(timestamp), nowFn);
+            return {stateFile, processState};
+        }
+
+        logger.info(`Found latest process state file: ${stateFile}`)
+        processState = JSON.parse(readFileSync(stateFile, "utf8"));
+
+        logger.debug(`Latest process state: ${JSON.stringify(processState)}`);
+
+        if (!processState.completionDate) {
+            logger.info(`Previous process is not completed, continuing with it.`);
+            return {stateFile, processState};
+        }
+
+        logger.info("Previous queue is completed.");
+
+        // convert to date
+        processState.completionDate = new Date(processState.completionDate);
+
+        // start a new one, but only if RENEW_PERIOD_IN_DAYS has passed
+        const daysSinceCompletion = (now.getTime() - processState.completionDate.getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSinceCompletion < this.processConfig.renewPeriodInDays) {
+            logger.info(`Previous process is completed, but RENEW_PERIOD_IN_DAYS of ${this.processConfig.renewPeriodInDays} hasn't passed yet. It has been ${daysSinceCompletion} days. Exiting.`);
+            return {stateFile: null, processState: null};
+        }
+
+        logger.info("Previous queue is completed, and RENEW_PERIOD_IN_DAYS has passed. Starting a new queue.");
+        stateFile = fileSystem.getPathOfNewProcessStateFile(timestamp);
+        processState = this.createNewProcessState(fileSystem.getNewProcessOutputFileName(timestamp), nowFn);
+        logger.info(`New process state file: ${stateFile}`);
+        logger.debug(`New process state: ${JSON.stringify(processState)}`);
+        return {stateFile, processState};
     }
 
     saveProcessRunOutput(fileSystem:FileSystem, stateFile:string, processState:GraphqlProcessState<QueueConfig, TaskSpec>, currentRunOutput:any[]) {

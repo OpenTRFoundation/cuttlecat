@@ -4,23 +4,22 @@ import {FocusProjectCandidateSearchQuery} from "../../generated/queries";
 import {FileOutput, Process, ProcessState} from "./process";
 import {TaskQueue} from "../../taskqueue";
 import fetch from "node-fetch";
-import {join} from "path";
 import assert from "assert";
 import loadDynamicImports from "../../dynamic-imports";
 import {QueueConfig} from "./config";
+import {TaskSpec} from "./task";
+import initializeNockBack from "../../test/initializeNockBack";
 
 import * as log from "../../log";
-import {TaskSpec} from "./task";
 
 // disable logging for tests
 log.setLevel("error");
 
+initializeNockBack();
+
 const nockBack = nock.back;
 
-nockBack.fixtures = join(__dirname, '/nock-fixtures');
-nockBack.setMode('lockdown');
-
-const task_2023_01_01_single_day = {
+const task_2023_01_01_single_day:TaskSpec = {
     id: "task_2023_01_01_single_day",
     parentId: null,
     originatingTaskId: null,
@@ -34,7 +33,7 @@ const task_2023_01_01_single_day = {
     startCursor: null,
 };
 
-const task_2023_01_02_single_day = {
+const task_2023_01_02_single_day:TaskSpec = {
     id: "task_2023_01_02_single_day",
     parentId: null,
     originatingTaskId: null,
@@ -48,7 +47,7 @@ const task_2023_01_02_single_day = {
     startCursor: null,
 };
 
-const task_2023_01_02_two_days = {
+const task_2023_01_02_two_days:TaskSpec = {
     id: "task_2023_01_02_two_days",
     parentId: null,
     originatingTaskId: null,
@@ -66,7 +65,7 @@ const testMatrix = [
     {
         // all good, 2 tasks, each return 1 repo
         unresolved: [task_2023_01_01_single_day, task_2023_01_02_single_day],
-        fixture: "01-all-good-no-pagination.json",
+        fixture: "focusProjectCandidateSearch/01-all-good-no-pagination.json",
         expectedOutput: [
             "search_1/repo_1",
             "search_2/repo_1",
@@ -79,7 +78,7 @@ const testMatrix = [
     {
         // all good, 2 tasks, each return 1 repo, 1 task has next page which returns 1 repo
         unresolved: [task_2023_01_01_single_day, task_2023_01_02_single_day],
-        fixture: "02-all-good-with-pagination.json",
+        fixture: "focusProjectCandidateSearch/02-all-good-with-pagination.json",
         expectedOutput: [
             "search_1/repo_1",
             "search_2/repo_1",
@@ -95,7 +94,7 @@ const testMatrix = [
         // task 2 returns 1 repo, and aborts due to primary rate limit
         // next page of task 1 is not processed and stored in unresolved
         unresolved: [task_2023_01_01_single_day, task_2023_01_02_single_day],
-        fixture: "03-rate-limit-reached.json",
+        fixture: "focusProjectCandidateSearch/03-rate-limit-reached.json",
         expectedOutput: [
             "search_1/repo_1",
             "search_2/repo_1",
@@ -109,7 +108,7 @@ const testMatrix = [
         // task 1 returns 1 repo, and doesn't have a next page
         // task 2 errors for 3 times and then returns 1 repo
         unresolved: [task_2023_01_01_single_day, task_2023_01_02_single_day],
-        fixture: "04-retry-works.json",
+        fixture: "focusProjectCandidateSearch/04-retry-works.json",
         expectedOutput: [
             "search_1/repo_1",
             "search_2/repo_1",
@@ -123,7 +122,7 @@ const testMatrix = [
         // task 1 returns 1 repo, and doesn't have a next page
         // task 2 errors for 4 times (1 initial try + 3 retries)
         unresolved: [task_2023_01_01_single_day, task_2023_01_02_single_day],
-        fixture: "05-unknown-error-without-narrower-scope.json",
+        fixture: "focusProjectCandidateSearch/05-unknown-error-without-narrower-scope.json",
         expectedOutput: [
             "search_1/repo_1",
         ],
@@ -138,7 +137,7 @@ const testMatrix = [
         // 2 tasks narrower scope tasks are created for task 2
         // task 2 is archived
         unresolved: [task_2023_01_01_single_day, task_2023_01_02_two_days],
-        fixture: "06-unknown-error-with-narrower-scopes.json",
+        fixture: "focusProjectCandidateSearch/06-unknown-error-with-narrower-scopes.json",
         expectedOutput: [
             "search_1/repo_1",
             "search_3/repo_1",
@@ -154,7 +153,7 @@ const testMatrix = [
         // task 2 hits secondary rate limit and won't return any results. it will abort the queue
         // next page of task 1 is not processed and stored in unresolved
         unresolved: [task_2023_01_01_single_day, task_2023_01_02_single_day],
-        fixture: "07-secondary-rate-limit-reached.json",
+        fixture: "focusProjectCandidateSearch/07-secondary-rate-limit-reached.json",
         expectedOutput: [
             "search_1/repo_1",
         ],
@@ -167,7 +166,7 @@ const testMatrix = [
         // task 1 returns 1 repo
         // task 2 returns 2 repos, but one is null, due to IP limitations
         unresolved: [task_2023_01_01_single_day, task_2023_01_02_single_day],
-        fixture: "08-partial-response.json",
+        fixture: "focusProjectCandidateSearch/08-partial-response.json",
         expectedOutput: [
             "search_1/repo_1",
             "search_2/repo_1",
@@ -179,7 +178,7 @@ const testMatrix = [
     },
 ];
 
-describe('focusProjectCandidateSearch mock test', () => {
+describe('focusProjectCandidateSearch mock test', async () => {
     testMatrix.forEach((test) => {
         it(test.fixture, async () => {
             await loadDynamicImports();
@@ -261,6 +260,7 @@ describe('focusProjectCandidateSearch mock test', () => {
             await proc.start();
 
             nockDone();
+            context.assertScopesFinished();
 
             // assertions
             assert.equal(currentRunOutput.length, test.expectedOutput.length);
