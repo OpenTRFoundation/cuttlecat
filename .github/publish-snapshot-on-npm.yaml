@@ -1,0 +1,59 @@
+name: Publish snapshot on NPM
+
+on:
+  # When manually triggered
+  workflow_dispatch:
+  # When there's a new commit in main branch
+  push:
+    branches: [ "main" ]
+
+jobs:
+  publish-snapshot-on-npm:
+    name: Publish snapshot on NPM
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/hydrogen'
+
+      - uses: actions/checkout@v4
+
+      - name: Print environment
+        run: |
+          node --version
+          npm --version
+
+      - name: Update the local version to snapshot (not persisted in Git)
+        run: |
+          # get the short git hash
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          # get timestamp
+          now=$(date +'%Y%m%d%H%M%S')
+          # get the current version from package.json
+          version=$(jq -r '.version' package.json)
+          new_version="${version}-snapshot.${git_hash}.${now}"
+          
+          # update the version in package.json
+          jq --arg new_version "$new_version" '.version = $new_version' package.json > package.json.tmp
+          cat package.json.tmp > package.json
+
+      - name: Clean install
+        run: |
+          npm ci
+
+      - name: Build
+        run: |
+          npm run build
+
+      - name: Test
+        run: |
+          npm run test
+
+      - uses: JS-DevTools/npm-publish@v2
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          access: public
+          # do not actually publish if testing this workflow locally
+          dry-run: ${{ github.event.act }}
+          tag: next

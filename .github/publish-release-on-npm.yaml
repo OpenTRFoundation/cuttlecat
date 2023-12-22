@@ -1,0 +1,44 @@
+name: Publish release on NPM
+
+on:
+  # When manually triggered
+  workflow_dispatch:
+  # When there's a release created
+  release:
+    types: [ published ]
+
+jobs:
+  publish-release-on-npm:
+    name: Publish release on NPM
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/hydrogen'
+
+      - uses: actions/checkout@v4
+
+      - name: Print environment
+        run: |
+          node --version
+          npm --version
+
+      - name: Clean install
+        run: |
+          npm ci
+
+      - name: Build
+        run: |
+          npm run build
+
+      - name: Test
+        run: |
+          npm run test
+
+      - uses: JS-DevTools/npm-publish@v2
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          access: public
+          # do not actually publish if testing this workflow locally
+          dry-run: ${{ github.event.act }}

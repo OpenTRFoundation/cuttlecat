@@ -1,0 +1,11 @@
+# keep this file so that npm doesn't use the .gitignore file
+.github
+.idea
+.actrc
+act-event.json
+tsconfig.json
+.nvmrc
+src/
+package.json.tmp
+.eslintrc.cjs
+.mocharc.json

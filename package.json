@@ -1,0 +1,75 @@
+{
+  "name": "@opentr/cuttlecat",
+  "version": "0.0.1-dev",
+  "description": "cuttlecat is a tool for collecting data from GitHub.",
+  "keywords": [
+    "github",
+    "graphql",
+    "octokit"
+  ],
+  "author": "Ali Ok",
+  "license": "Apache-2.0",
+  "homepage": "https://opentr.foundation/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpenTRFoundation/cuttlecat.git"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bin": {
+    "cuttlecat": "dist/index.js"
+  },
+  "exports": "./dist/index.js",
+  "scripts": {
+    "build": "npm run clean && npm run compile && npm run lint",
+    "start": "npm run build && node dist/index.js",
+    "test": "npm run build && mocha './src/**/*.test.ts' --recursive",
+    "clean": "rimraf ./dist",
+    "compile": "tsc",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@octokit/graphql": "^7.0.2",
+    "@tsconfig/node16": "^16.1.1",
+    "@types/chai": "^4.3.11",
+    "@types/chai-as-promised": "^7.1.8",
+    "@types/lodash": "^4.14.202",
+    "@types/mocha": "^10.0.6",
+    "@types/mock-fs": "^4.13.4",
+    "@types/node": "^20.6.3",
+    "@types/node-fetch": "^2.6.9",
+    "@types/seedrandom": "^3.0.8",
+    "@types/uuid": "^9.0.7",
+    "@types/yargs": "^17.0.29",
+    "@typescript-eslint/eslint-plugin": "^6.9.0",
+    "@typescript-eslint/parser": "^6.9.0",
+    "chai": "^4.3.10",
+    "chai-as-promised": "^7.1.1",
+    "mocha": "^10.2.0",
+    "mock-fs": "^5.2.0",
+    "rimraf": "^5.0.5",
+    "seedrandom": "^3.0.5",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2",
+    "eslint-import-resolver-typescript": "^3.6.1",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint": "^8.52.0"
+  },
+  "dependencies": {
+    "date-fns": "^2.30.0",
+    "date-fns-tz": "^2.0.0",
+    "graphql": "^16.8.1",
+    "lodash": "^4.17.21",
+    "nock": "^13.4.0",
+    "node-fetch": "^3.3.2",
+    "p-queue": "^7.4.1",
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0",
+    "yargs": "^17.7.2"
+  },
+  "bugs": {
+    "url": "https://github.com/OpenTRFoundation/cuttlecat/issues"
+  }
+}

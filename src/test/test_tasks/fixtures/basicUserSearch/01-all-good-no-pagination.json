@@ -1,0 +1,45 @@
+[
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\nquery BasicUserSearch($searchString: String!, $first: Int!, $after:String){\n    rateLimit {\n        cost\n        limit\n        nodeCount\n        remaining\n        resetAt\n        used\n    }\n    search(type: USER, query:$searchString, first:$first, after:$after) {\n        pageInfo {\n            startCursor\n            hasNextPage\n            endCursor\n        }\n        userCount\n        nodes {\n            ... on User {\n                ...UserFragment\n            }\n        }\n    }\n}\nfragment UserFragment on User {\n    login\n    company\n    name\n}\n",
+      "variables": {
+        "searchString": "location:Foo created:2023-01-01..2023-01-01",
+        "first": 100,
+        "after": null
+      }
+    },
+    "status": 200,
+    "response": {
+      "data": {
+        "rateLimit": {
+          "limit": 5000,
+          "remaining": 4967,
+          "used": 33
+        },
+        "search": {
+          "pageInfo": {
+            "startCursor": "not_used",
+            "hasNextPage": false,
+            "endCursor": "not_used"
+          },
+          "userCount": 1,
+          "nodes": [
+            {
+              "login": "user_1",
+              "company": "company_1",
+              "name": "name_1"
+            }
+          ]
+        }
+      }
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com"
+    ],
+    "responseIsBinary": false
+  }
+]

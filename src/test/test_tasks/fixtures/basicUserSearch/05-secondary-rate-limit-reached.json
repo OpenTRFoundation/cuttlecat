@@ -1,0 +1,27 @@
+[
+  {
+    "scope": "https://api.github.com:443",
+    "method": "POST",
+    "path": "/graphql",
+    "body": {
+      "query": "\nquery BasicUserSearch($searchString: String!, $first: Int!, $after:String){\n    rateLimit {\n        cost\n        limit\n        nodeCount\n        remaining\n        resetAt\n        used\n    }\n    search(type: USER, query:$searchString, first:$first, after:$after) {\n        pageInfo {\n            startCursor\n            hasNextPage\n            endCursor\n        }\n        userCount\n        nodes {\n            ... on User {\n                ...UserFragment\n            }\n        }\n    }\n}\nfragment UserFragment on User {\n    login\n    company\n    name\n}\n",
+      "variables": {
+        "searchString": "location:Foo created:2023-01-01..2023-01-01",
+        "first": 100,
+        "after": null
+      }
+    },
+    "status": 403,
+    "response": {
+      "documentation_url": "https://docs.github.com/en/free-pro-team@latest/rest/overview/resources-in-the-rest-api#secondary-rate-limits",
+      "message": "You have exceeded a secondary rate limit. Please wait a few minutes before you try again. If you reach out to GitHub Support for help, please include the request ID 6442:5564:119CB9:240639:65303C06."
+    },
+    "rawHeaders": [
+      "Server",
+      "GitHub.com",
+      "Retry-After",
+      "60"
+    ],
+    "responseIsBinary": false
+  }
+]
