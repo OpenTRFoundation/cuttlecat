@@ -30,6 +30,9 @@
     "compile": "tsc",
     "lint": "eslint ."
   },
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "@octokit/graphql": "^7.0.2",
     "@tsconfig/node16": "^16.1.1",
