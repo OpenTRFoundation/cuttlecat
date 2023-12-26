@@ -132,6 +132,9 @@ git commit -m "Release 0.0.6"
 git tag -a "0.0.6" -m "Release 0.0.6"
 git push --follow-tags
 
+# create a new release on GitHub
+gh release create
+
 # update the version in package.json to something like "0.0.7-dev"
 npm install
 git add .
