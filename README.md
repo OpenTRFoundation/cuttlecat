@@ -121,3 +121,19 @@ npm run build
 ```shell
 npm run test
 ```
+
+## Creating a new release
+
+```shell
+# update the version in package.json to something like "0.0.6"
+npm install
+git add .
+git commit -m "Release 0.0.6"
+git tag -a "v0.0.6" -m "Release 0.0.6" 
+git push --follow-tags
+
+# update the version in package.json to something like "0.0.7-dev"
+npm install
+git add .
+git commit -m "Start 0.0.7-dev"
+```
