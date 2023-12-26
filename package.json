@@ -21,7 +21,6 @@
   "bin": {
     "cuttlecat": "dist/index.js"
   },
-  "exports": "./dist/index.js",
   "scripts": {
     "build": "npm run clean && npm run compile && npm run lint",
     "start": "npm run build && node dist/index.js",
@@ -30,9 +29,6 @@
     "compile": "tsc",
     "lint": "eslint ."
   },
-  "files": [
-    "dist"
-  ],
   "devDependencies": {
     "@octokit/graphql": "^7.0.2",
     "@tsconfig/node16": "^16.1.1",
