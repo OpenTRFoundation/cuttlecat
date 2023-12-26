@@ -136,4 +136,5 @@ git push --follow-tags
 npm install
 git add .
 git commit -m "Start 0.0.7-dev"
+git push
 ```
