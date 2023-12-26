@@ -30,7 +30,6 @@
     "lint": "eslint ."
   },
   "devDependencies": {
-    "@octokit/graphql": "^7.0.2",
     "@tsconfig/node16": "^16.1.1",
     "@types/chai": "^4.3.11",
     "@types/chai-as-promised": "^7.1.8",
@@ -66,7 +65,8 @@
     "p-queue": "^7.4.1",
     "uuid": "^9.0.1",
     "winston": "^3.11.0",
-    "yargs": "^17.7.2"
+    "yargs": "^17.7.2",
+    "@octokit/graphql": "^7.0.2"
   },
   "bugs": {
     "url": "https://github.com/OpenTRFoundation/cuttlecat/issues"
