@@ -129,7 +129,7 @@ npm run test
 npm install
 git add .
 git commit -m "Release 0.0.6"
-git tag -a "v0.0.6" -m "Release 0.0.6" 
+git tag -a "0.0.6" -m "Release 0.0.6"
 git push --follow-tags
 
 # update the version in package.json to something like "0.0.7-dev"
