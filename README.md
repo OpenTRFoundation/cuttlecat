@@ -27,10 +27,16 @@ cuttlecat is a task runner. It takes a command file and a data directory as inpu
 
 This design allows the process to be fully extensible. You can write your own command file to search for anything you want and process the results in any way you want.
 
+## Installing cuttlecat
+
+```shell
+npm install -g @opentr/cuttlecat
+```
+
 ## Running cuttlecat
 
 ```shell
-node dist/index.js --command-file=<your command file> --data-directory=<data directory> --github-token=<github token>
+cuttlecat --command-file=<your command file> --data-directory=<data directory> --github-token=<github token>
 ```
 
 ### Usage
@@ -39,7 +45,7 @@ node dist/index.js --command-file=<your command file> --data-directory=<data dir
 node dist/index.js --help
 --->
 ```shell
-Usage: index.js --command-file=<your command file> [options]
+Usage: cuttlecat --command-file=<your command file> [options]
 
 Required options
   --command-file    Command file to load.  [string] [required]
@@ -76,7 +82,7 @@ To run the sample command:
 rm -rf /tmp/foo/bar
 mkdir -p /tmp/foo/bar
 
-node dist/index.js --command-file="./test/test_tasks/basicUserSearch.js" \
+cuttlecat --command-file="./test/test_tasks/basicUserSearch.js" \
     --data-directory="/tmp/foo/bar" \
     --github-token="$(gh auth token)"
 ```
