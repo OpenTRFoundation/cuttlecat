@@ -1,0 +1,26 @@
+{
+  "startingConfig": {
+    "does not": "matter"
+  },
+  "unresolved": {},
+  "resolved": {
+    "1dec2506-c833-4604-ae9c-e5a7e6d87ee7": {
+      "id": "1dec2506-c833-4604-ae9c-e5a7e6d87ee7",
+      "parentId": null,
+      "originatingTaskId": null,
+      "minStars": 50,
+      "minForks": 50,
+      "minSizeInKb": 1000,
+      "hasActivityAfter": "2023-07-21",
+      "createdAfter": "2008-06-04",
+      "createdBefore": "2008-06-08",
+      "pageSize": 100,
+      "startCursor": null
+    }
+  },
+  "errored": {},
+  "archived": {},
+  "startDate": "2023-10-19T18:25:29.914Z",
+  "completionDate": null,
+  "completionError": null
+}

@@ -33,19 +33,34 @@ This design allows the process to be fully extensible. You can write your own co
 npm install -g @opentr/cuttlecat
 ```
 
-## Running cuttlecat
-
-```shell
-cuttlecat --command-file=<your command file> --data-directory=<data directory> --github-token=<github token>
-```
-
-### Usage
+## Usage
 
 <!---
 node dist/index.js --help
 --->
 ```shell
-Usage: cuttlecat --command-file=<your command file> [options]
+Usage: cuttlecat <command> [options]
+
+Commands:
+  cuttlecat execute                  Execute the command within the given file and store the result.
+  cuttlecat latest-process-complete  Checks if the latest queue is marked as complete and prints the result in the stdout.
+  cuttlecat requeue-tasks          Manually requeue tasks for trying them again.
+
+
+Options:
+  --help     Show help  [boolean]
+  --version  Show version number  [boolean]
+```
+
+## Command `execute`
+
+<!---
+node dist/index.js execute --help
+--->
+```shell
+Usage: cuttlecat execute [options]
+Run cuttlecat --help for help on common options.
+Execute the command within the given file and store the result.
 
 Required options
   --command-file    Command file to load.  [string] [required]
@@ -54,6 +69,7 @@ Required options
 
 Options:
   --help                     Show help  [boolean]
+  --version                  Show version number  [boolean]
   --renew-period-in-days     Number of days to wait until creating a new queue after the latest one is completed.  [number] [default: 7]
   --concurrency              Number of concurrent tasks to process the queue. As this search is IO bound and CPU bound, there can be many concurrent tasks (more than the number of cores). However, because of the rate limiting, there will be a lot of idle tasks. So, it is recommended to keep concurrency low.  [number] [default: 6]
   --per-task-timeout-in-ms   Timeout in milliseconds for each task in the queue.Keeping the timeout too long will end up using too many GitHub actions minutes.Keeping the timeout too short will result in too many errored items.  [number] [default: 30000]
@@ -75,14 +91,14 @@ Examples:
   --report-period-in-ms=5000                               Print the queue state to stdout every 5 seconds. This is useful to see how many tasks are in the queue, how many are completed, how many are errored, etc.
 ```
 
-### Running the sample command
+### Running the sample search command
 
 To run the sample command:
 ```shell
 rm -rf /tmp/foo/bar
 mkdir -p /tmp/foo/bar
 
-cuttlecat --command-file="./test/test_tasks/basicUserSearch.js" \
+cuttlecat execute --command-file="../test/test_tasks/basicUserSearch.js" \
     --data-directory="/tmp/foo/bar" \
     --github-token="$(gh auth token)"
 ```
@@ -91,6 +107,58 @@ The sample task will search for users who have location set to "Istanbul" and si
 The output will be stored in `/tmp/foo/bar` directory.
 
 See [`src/test/test_tasks/basicUserSearch.ts`](src/test/test_tasks/basicUserSearch.ts) for the implementation of the sample command.
+
+## Command `latest-queue-complete`
+
+<!---
+node dist/index.js latest-queue-complete --help
+--->
+```shell
+Usage: cuttlecat latest-queue-complete [options]
+Run cuttlecat --help for help on common options.
+Checks if the latest queue is marked as complete and prints the result in the stdout.
+
+Options:
+  --help            Show help  [boolean]
+  --version         Show version number  [boolean]
+  --data-directory  Data directory to check the process files.  [string] [required]
+
+Examples:
+  NOTE:                                     Examples below are not executable commands, they are just examples of how to use the command.
+  --data-directory=/path/to/data/directory  Check if the latest state file in the given directory was complete. After you start another queue that produces a state file, you can run this command to check if it is complete. This command writes true or false to stdout, which can beused in a script to determine if the previous queue was done.
+```
+
+Example execution:
+```shell
+$ cuttlecat latest-queue-complete --data-directory="/tmp/foo/bar"
+true
+```
+
+## Command `requeue-tasks`
+
+<!---
+node dist/index.js requeue-tasks --help
+--->
+```shell
+Usage: cuttlecat requeue-tasks [options]
+Run cuttlecat --help for help on common options.
+Manually requeue tasks for trying them again.
+
+Options:
+  --help            Show help  [boolean]
+  --version         Show version number  [boolean]
+  --requeue-type    Type of tasks to requeue. 'errored' will requeue all errored tasks. 'non-critical-errored' will requeue tasks that are not in the `errored` bucket, but resolved with non-critical errors.  [required] [choices: "errored", "non-critical-errored"]
+  --data-directory  Data directory to for the task states and outputs.  [string] [required]
+  --timestamp       Directory name under data-directory.  [string] [required]
+```
+
+Example execution:
+```shell
+node dist/index.js requeue-tasks \
+    --requeue-type="non-critical-errored" \
+    --data-directory="/tmp/foo/bar" \
+    --timestamp="1234"
+```
 
 ## Implement your own search command
 

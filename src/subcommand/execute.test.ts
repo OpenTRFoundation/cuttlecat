@@ -2,19 +2,19 @@ import {graphql} from "@octokit/graphql";
 import {expect} from "chai";
 import mockfs, {restore as mockfsRestore} from "mock-fs";
 
-import {TaskContext} from "./graphql/context.js";
-import {FakeCommand, fakeNow, FakeResult, FakeTaskSpec} from "./graphql/fake.test.js";
-import * as log from "./log.js";
+import {TaskContext} from "../graphql/context.js";
+import {FakeCommand, fakeNow, FakeResult, FakeTaskSpec} from "../graphql/fake.test.js";
+import * as log from "../log.js";
+import {ProcessFileHelper} from "../processFileHelper.js";
+import {ErroredTask, TaskQueue} from "../queue/taskqueue.js";
+import {formatDate} from "../utils.js";
 import {
     addErroredToUnresolved,
     checkFileCompleted,
     getOrCreateLatestProcessState,
     initializeQueue,
     ProcessState
-} from "./main.js";
-import {ProcessFileHelper} from "./processFileHelper.js";
-import {ErroredTask, TaskQueue} from "./queue/taskqueue.js";
-import {formatDate} from "./utils.js";
+} from "./execute.js";
 
 const logger = log.createLogger("index/test");
 

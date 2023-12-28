@@ -8,7 +8,7 @@ import fetch from "node-fetch";
 
 import {TaskContext} from "../../graphql/context.js";
 import * as log from "../../log.js";
-import {addErroredToUnresolved, initializeQueue, ProcessState, startTaskQueue} from "../../main.js";
+import {addErroredToUnresolved, initializeQueue, ProcessState, startTaskQueue} from "../../subcommand/execute.js";
 import {TaskQueue, TaskStore} from "../../queue/taskqueue.js";
 import BasicUserSearchCommand, {BasicUserSearchTaskResult, BasicUserSearchTaskSpec} from "./basicUserSearch.js";
 
