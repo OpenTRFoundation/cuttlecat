@@ -1,6 +1,6 @@
 {
   "name": "@opentr/cuttlecat",
-  "version": "0.0.9",
+  "version": "0.0.10-dev",
   "description": "cuttlecat is a tool for collecting data from GitHub.",
   "keywords": [
     "github",
