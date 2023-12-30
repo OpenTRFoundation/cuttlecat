@@ -22,7 +22,7 @@ import {ProcessFileHelper} from "../processFileHelper.js";
 import {ErroredTask, ResolvedTask, TaskQueue} from "../queue/taskqueue.js";
 
 import {SubCommand} from "../subcommand.js";
-import {formatTimeStamp, now as getNow, nowTimestamp} from "../utils.js";
+import {formatTimeStamp, now as getNow, nowTimestamp, shuffleDictionary, sortByKey} from "../utils.js";
 
 type BaseResultType = any;
 type BaseTaskSpec = TaskSpec;
@@ -172,6 +172,12 @@ export async function start(argv:Args) {
     // However, when the RETRY_COUNT is increased, we should retry the errored tasks from the previous run.
     logger.info(`Checking if the errored tasks should be retried, according to retry count (${argv.retryCount}).`)
     addErroredToUnresolved(logger, taskStore.errored, taskStore.unresolved, argv.retryCount);
+
+    // shuffle the unresolved tasks, so that we don't hit the same rate limit for each run
+    // otherwise, the queue will start with the same tasks each time.
+    // and if the queue is aborted, and restarted, it will start with the same tasks again.
+    // this will result in hitting the same rate limit again and again.
+    taskStore.unresolved = processState.unresolved = shuffleDictionary(taskStore.unresolved);
 
     // now add the unresolved tasks to the queue
     initializeQueue(taskQueue, taskStore.unresolved, context, command);
@@ -432,6 +438,7 @@ function saveProcessRunOutput(logger:winston.Logger, processFileHelper:ProcessFi
     const processStateFilePath = processFileHelper.getProcessStateFilePath(processStateDir);
 
     logger.info(`Writing process state to file: ${processStateFilePath}`);
+    sortProcessState(processState);
     writeFileSync(processStateFilePath, JSON.stringify(processState, null, 2));
 
     const now = nowFn();
@@ -455,6 +462,13 @@ function saveProcessRunOutput(logger:winston.Logger, processFileHelper:ProcessFi
         outputStream.write(outputStr + "\n");
     }
     outputStream.end();
+}
+
+export function sortProcessState(processState:ProcessState) {
+    processState.unresolved = sortByKey(processState.unresolved);
+    processState.resolved = sortByKey(processState.resolved);
+    processState.errored = sortByKey(processState.errored);
+    processState.archived = sortByKey(processState.archived);
 }
 
 const REQUIRED_OPTIONS_GROUP = "Required options";

@@ -6,7 +6,7 @@ import {GetBuiltOptionsType} from "../arguments.js";
 import * as log from "../log.js";
 import {ProcessFileHelper} from "../processFileHelper.js";
 import {SubCommand} from "../subcommand.js";
-import {ProcessState} from "./execute.js";
+import {ProcessState, sortProcessState} from "./execute.js";
 
 export const CommandDefinition:SubCommand = {
     commandName: "requeue-tasks",
@@ -49,6 +49,7 @@ export async function start(argv:Args) {
 
     processState.completionDate = null;
     processState.completionError = null;
+    sortProcessState(processState);
     writeFileSync(processStateFilePath, JSON.stringify(processState, null, 2));
 }
 

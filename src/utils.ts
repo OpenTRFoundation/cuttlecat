@@ -11,6 +11,7 @@ import {
 } from "date-fns";
 
 import {format as doFormatDateTz} from "date-fns-tz";
+import lodash from "lodash";
 
 export function formatDate(d:Date):string {
     return doFormatDate(d, "yyyy-MM-dd");
@@ -180,4 +181,21 @@ export function getRandomInt(min:number, max:number, randGenerator?:() => number
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(rand * (max - min + 1)) + min;
+}
+
+export function sortByKey<T>(dict:{ [key:string]:T }) {
+    const sorted:{ [key:string]:T } = {};
+    Object.keys(dict).sort().forEach(function (key) {
+        sorted[key] = dict[key];
+    });
+    return sorted;
+}
+
+export function shuffleDictionary<T>(dict:{ [key:string]:T }) {
+    const keys = lodash.shuffle(Object.keys(dict));
+    const shuffled:{ [key:string]:T } = {};
+    for (const key of keys) {
+        shuffled[key] = dict[key];
+    }
+    return shuffled;
 }
