@@ -1,8 +1,3 @@
-TODO:
-- requeue command (need to convert current to `execute` command)
-- release tooling
-- CI
-
 # cuttlecat - Collect information from GitHub
 
 cuttlecat is a tool to collect information from GitHub. It is designed to be used in GitHub Actions, but can be used in any environment.
@@ -171,7 +166,11 @@ When you are implementing your own command, you will need to return some objects
 
 For an example command, please see [`src/test/test_tasks/basicUserSearch.ts`](src/test/test_tasks/basicUserSearch.ts).
 
-TODO: links to more complicated commands.
+OpenTR's [`state-of-oss-contribution`](https://github.com/OpenTRFoundation/state-of-oss-contribution) uses cuttlecat to collect data from GitHub. Then, the collected data is processed and a report is built in [`state-of-oss-contribution-report`](https://github.com/OpenTRFoundation/state-of-oss-contribution-report).
+
+See the [`state-of-oss-contribution`](https://github.com/OpenTRFoundation/state-of-oss-contribution) repository for more advanced examples.
+
+TODO: links to more complicated example commands.
 
 ## Using cuttlecat as a library
 
