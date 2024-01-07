@@ -166,9 +166,13 @@ When you are implementing your own command, you will need to return some objects
 
 For an example command, please see [`src/test/test_tasks/basicUserSearch.ts`](src/test/test_tasks/basicUserSearch.ts).
 
-OpenTR's [`state-of-oss-contribution`](https://github.com/OpenTRFoundation/state-of-oss-contribution) uses cuttlecat to collect data from GitHub. Then, the collected data is processed and a report is built in [`state-of-oss-contribution-report`](https://github.com/OpenTRFoundation/state-of-oss-contribution-report).
+OpenTR has built a report using cuttlecat: [State of Open Source Contribution in Turkey](https://state.opentr.foundation/).
 
-See the [`state-of-oss-contribution`](https://github.com/OpenTRFoundation/state-of-oss-contribution) repository for more advanced examples.
+This report, uses cuttlecat to collect data from GitHub. Then, the collected data is processed and a report is built.
+
+You may find the data collection part in [`state-of-oss-contribution`](https://github.com/OpenTRFoundation/state-of-oss-contribution) and the report building part in [`state-of-oss-contribution-report`](https://github.com/OpenTRFoundation/state-of-oss-contribution-report).
+
+You may see the [`state-of-oss-contribution`](https://github.com/OpenTRFoundation/state-of-oss-contribution) repository for more advanced command examples.
 
 TODO: links to more complicated example commands.
 
