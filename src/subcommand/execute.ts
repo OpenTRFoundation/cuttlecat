@@ -197,7 +197,8 @@ export async function start(argv:Args) {
             // queue size is 0, but there are unresolved tasks --> hit the rate limit, should stop reporting
             // queue size is 0, there are no unresolved tasks --> queue is completed, should stop reporting
             const queueState = taskQueue.getState();
-            if (queueState.size == 0) {
+            if (queueState.size == 0 && queueState.pending == 0) {
+                logger.info("Queue is empty. Stopping regular reporting.");
                 break;
             }
         }
