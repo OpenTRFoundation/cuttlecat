@@ -362,6 +362,7 @@ export class TaskQueue<ResultType, TaskSpec, Context> {
             }
 
             if (output) {
+                logger.debug(`Task ${task.getId(this.context)} returned output, processing it.`);
                 try {
                     // we got the output. it can be the result of a task that completed successfully, or a task that errored
                     // and returned a result from an errored response.
@@ -369,10 +370,12 @@ export class TaskQueue<ResultType, TaskSpec, Context> {
 
                     // remove from unresolved, add to resolved
                     if (!nonCriticalErrorMessage) {
+                        logger.debug(`Task ${task.getId(this.context)} has no errors and no non-critical error message, moving to resolved list.`);
                         this.taskStore.resolved[task.getId(this.context)] = {
                             task: task.getSpec(this.context),
                         };
                     } else {
+                        logger.debug(`Task ${task.getId(this.context)} has no errors but has a non-critical error message, moving to resolved list.`);
                         this.taskStore.resolved[task.getId(this.context)] = {
                             task: task.getSpec(this.context),
                             debug: task.getDebugInstructions(this.context),
@@ -382,14 +385,17 @@ export class TaskQueue<ResultType, TaskSpec, Context> {
                             },
                         };
                     }
+                    logger.debug(`Removing task ${task.getId(this.context)} from unresolved list.`);
                     delete this.taskStore.unresolved[task.getId(this.context)];
 
                     // if this task was previously errored, remove it from the errored list
                     if (this.taskStore.errored[task.getId(this.context)]) {
+                        logger.debug(`Task was errored before and is in the errored list, removing from errored list. Task id: ${task.getId(this.context)}`);
                         delete this.taskStore.errored[task.getId(this.context)];
                     }
 
                     // task should store its own output somewhere
+                    logger.debug(`Saving output of task ${task.getId(this.context)}.`);
                     task.saveOutput(this.context, output);
 
                     const nextTask = task.nextTask(this.context, output);
@@ -397,6 +403,8 @@ export class TaskQueue<ResultType, TaskSpec, Context> {
                         logger.debug(`Found next task ${nextTask.getId(this.context)} for task ${task.getId(this.context)}, adding to queue.`);
                         nextTask.setOriginatingTaskId(this.context, task.getId(this.context));
                         this.add(nextTask);
+                    } else {
+                        logger.debug(`No next task found for task ${task.getId(this.context)}.`);
                     }
 
                     // if the task identifies that there's an issue and the processing should stop (like rate limits),
@@ -405,6 +413,9 @@ export class TaskQueue<ResultType, TaskSpec, Context> {
                         logger.debug(`Task ${task.getId(this.context)} identified that processing should stop, aborting queue.`);
                         this.abort();
                         return;
+                    }
+                    else {
+                        logger.debug(`Task ${task.getId(this.context)} did not identify that processing should stop, continuing.`);
                     }
                 } catch (e) {
                     logger.error(`Error while saving output of task ${task.getId(this.context)}: ${e}`);
