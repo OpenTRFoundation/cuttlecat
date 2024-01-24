@@ -72,7 +72,7 @@ export abstract class Task<R extends TaskResult, S extends TaskSpec> extends Bas
         });
 
         try {
-            return await graphqlWithSignal(
+            return graphqlWithSignal(
                 this.getGraphqlQuery(context),
                 this.buildQueryParameters(context)
             );
