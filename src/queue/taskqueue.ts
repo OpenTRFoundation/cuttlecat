@@ -261,7 +261,9 @@ export class TaskQueue<ResultType, TaskSpec, Context> {
     }
 
     add(task:Task<ResultType, TaskSpec, Context>):void {
+        logger.debug(`Adding task ${task.getId(this.context)} to the unresolved tasks.`);
         this.taskStore.unresolved[task.getId(this.context)] = task.getSpec(this.context);
+        logger.debug(`Unresolved task count: ${Object.keys(this.taskStore.unresolved).length}`);
         (async () => {
             let output:ResultType = <ResultType>null;
             let nonCriticalErrorMessage:string | null = null;
@@ -272,6 +274,8 @@ export class TaskQueue<ResultType, TaskSpec, Context> {
                     return;
                 }
 
+                logger.debug(`Adding task ${task.getId(this.context)} to the backing queue.`);
+                logger.debug(`Backing queue state: ${JSON.stringify(this.getState())}`);
                 const taskResult = await this.backingQueue.add(task.createExecutable(this.context), {signal: this.abortController.signal}) as TaskResult<ResultType, TaskSpec, Context>;
                 logger.debug(`Task ${task.getId(this.context)} done`);
                 output = taskResult.output;
