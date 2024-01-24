@@ -434,6 +434,7 @@ export class TaskQueue<ResultType, TaskSpec, Context> {
             const checkUnresolvedTaskCount = () => {
                 logger.debug("Task queue is idle, checking if there are any unresolved tasks.");
                 logger.debug(`Unresolved task count: ${Object.keys(this.taskStore.unresolved).length}`);
+                logger.debug(`Unresolved tasks: ${JSON.stringify(Object.keys(this.taskStore.unresolved))}`);
                 if (Object.keys(this.taskStore.unresolved).length === 0) {
                     done = true;
                 }
