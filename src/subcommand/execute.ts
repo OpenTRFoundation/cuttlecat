@@ -182,25 +182,16 @@ export async function start(argv:Args) {
     // now add the unresolved tasks to the queue
     initializeQueue(taskQueue, taskStore.unresolved, context, command);
 
+    let taskQueueCompleted:boolean = false;
     // Print the queue state periodically
     // noinspection ES6MissingAwait
     (async () => {
         if (argv.reportPeriodInMs == 0) {
             return;
         }
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
+        while (!taskQueueCompleted) {
             reportTaskQueue(logger, taskQueue, processState);
             await new Promise(r => setTimeout(r, argv.reportPeriodInMs));
-
-            // There are some cases here:
-            // queue size is 0, but there are unresolved tasks --> hit the rate limit, should stop reporting
-            // queue size is 0, there are no unresolved tasks --> queue is completed, should stop reporting
-            const queueState = taskQueue.getState();
-            if (queueState.size == 0 && queueState.pending == 0) {
-                logger.info("Queue is empty. Stopping regular reporting.");
-                break;
-            }
         }
     })();
 
@@ -223,6 +214,7 @@ export async function start(argv:Args) {
 
     // start the task queue
     await startTaskQueue(logger, taskQueue);
+    taskQueueCompleted = true;
 
     // mark the file as completed, if it really is
     checkFileCompleted(processState, getNow);
