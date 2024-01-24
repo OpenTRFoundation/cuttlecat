@@ -179,7 +179,7 @@ export abstract class BaseTask<ResultType, TaskSpec, Context> implements Task<Re
                 .execute(context, options.signal)
                 .then((result) => {
                     if(!result){
-                        logger.debug(`Task ${this.getId(context)} execution produced null result.`);
+                        logger.debug(`Task ${this.getId(context)} execution produced falsy result: ${result}.`);
                     }
                     return {
                         task: this,
@@ -281,11 +281,10 @@ export class TaskQueue<ResultType, TaskSpec, Context> {
                 logger.debug(`Backing queue state: ${JSON.stringify(this.getState())}`);
                 const taskResult = await this.backingQueue.add(task.createExecutable(this.context), {signal: this.abortController.signal}) as TaskResult<ResultType, TaskSpec, Context>;
                 logger.debug(`Task ${task.getId(this.context)} done`);
-                if(!taskResult){
-                    logger.debug(`Task ${task.getId(this.context)} returned null result.`);
-                }
                 if(!taskResult.output){
                     logger.debug(`Task ${task.getId(this.context)} returned null output.`);
+                    // noinspection ExceptionCaughtLocallyJS
+                    throw new Error(`Task ${task.getId(this.context)} returned null output.`);
                 }
                 output = taskResult.output;
             } catch (e) {
@@ -370,10 +369,7 @@ export class TaskQueue<ResultType, TaskSpec, Context> {
                 }
             }
 
-            if(!output){
-                logger.debug(`Task ${task.getId(this.context)} returned null output, not processing it.`);
-            }
-            else {
+            if (output) {
                 logger.debug(`Task ${task.getId(this.context)} returned output, processing it.`);
                 try {
                     // we got the output. it can be the result of a task that completed successfully, or a task that errored
@@ -425,8 +421,7 @@ export class TaskQueue<ResultType, TaskSpec, Context> {
                         logger.debug(`Task ${task.getId(this.context)} identified that processing should stop, aborting queue.`);
                         this.abort();
                         return;
-                    }
-                    else {
+                    } else {
                         logger.debug(`Task ${task.getId(this.context)} did not identify that processing should stop, continuing.`);
                     }
                 } catch (e) {
