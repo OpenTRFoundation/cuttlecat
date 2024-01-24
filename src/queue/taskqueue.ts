@@ -422,8 +422,7 @@ export class TaskQueue<ResultType, TaskSpec, Context> {
         while (true) {
             await this.backingQueue.onIdle();
             logger.debug("Task queue is idle, checking if there are any unresolved tasks.");
-            // TODO: remove
-            // logger.error(`Unresolved task count: ${Object.keys(this.taskStore.unresolved).length}`);
+            logger.debug(`Unresolved task count: ${Object.keys(this.taskStore.unresolved).length}`);
             if (Object.keys(this.taskStore.unresolved).length === 0) {
                 break;
             }
