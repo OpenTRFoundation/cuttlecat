@@ -421,18 +421,24 @@ export class TaskQueue<ResultType, TaskSpec, Context> {
         // eslint-disable-next-line no-constant-condition
         while (true) {
             await this.backingQueue.onIdle();
+            if (this.abortController.signal.aborted) {
+                break;
+            }
+
             let done = false;
-            // give some time to the queue to add new items
-            setTimeout(() => {
+            // stop using the event thread for a while to let the queue process the new items
+            const checkUnresolvedTaskCount = () => {
                 logger.debug("Task queue is idle, checking if there are any unresolved tasks.");
                 logger.debug(`Unresolved task count: ${Object.keys(this.taskStore.unresolved).length}`);
                 if (Object.keys(this.taskStore.unresolved).length === 0) {
                     done = true;
                 }
-                if (this.abortController.signal.aborted) {
-                    done = true;
-                }
-            }, 1000);
+            };
+            checkUnresolvedTaskCount();
+            if(done){
+                break;
+            }
+            setTimeout(checkUnresolvedTaskCount, 100);
             if(done){
                 break;
             }
