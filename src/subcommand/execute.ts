@@ -209,7 +209,7 @@ export async function start(argv:Args) {
     let maxAbortTimeTimeout;
     if (argv.maxRunTimeInMinutes) {
         logger.info(`Maximum run time of ${argv.maxRunTimeInMinutes} minutes set. Exiting after that time.`);
-        maxAbortTimeTimeout = setTimeout(() => {
+        maxAbortTimeTimeout = setTimeout(function () {
             logger.info(`Maximum run time of ${argv.maxRunTimeInMinutes} minutes reached. Sending shutdown signal.`);
             maxRunTimeAbortController.abort();
         }, argv.maxRunTimeInMinutes * 60 * 1000);
@@ -234,6 +234,7 @@ export async function start(argv:Args) {
     saveProcessRunOutput(logger, processFileHelper, latestProcessStateDir, processState, currentRunOutput, getNow);
 
     if (maxAbortTimeTimeout) {
+        logger.info("Clearing max abort time timeout.");
         clearTimeout(maxAbortTimeTimeout);
     }
 
