@@ -9,7 +9,7 @@
   ],
   "author": "Ali Ok",
   "license": "Apache-2.0",
-  "homepage": "https://opentr.foundation/",
+  "homepage": "https://opentr.netlify.app/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/OpenTRFoundation/cuttlecat.git"

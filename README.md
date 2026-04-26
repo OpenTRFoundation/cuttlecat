@@ -166,7 +166,7 @@ When you are implementing your own command, you will need to return some objects
 
 For an example command, please see [`src/test/test_tasks/basicUserSearch.ts`](src/test/test_tasks/basicUserSearch.ts).
 
-OpenTR has built a report using cuttlecat: [State of Open Source Contribution in Turkey](https://state.opentr.foundation/).
+OpenTR has built a report using cuttlecat: [State of Open Source Contribution in Turkey](https://state-of-oss-contribution-report.netlify.app/).
 
 This report, uses cuttlecat to collect data from GitHub. Then, the collected data is processed and a report is built.
 
